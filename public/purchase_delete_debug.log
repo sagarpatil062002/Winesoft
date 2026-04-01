@@ -85260,3 +85260,134 @@
 [2026-03-30 14:02:15] Deleted 12 purchase details
 [2026-03-30 14:02:15] Deleted 5 purchase headers
 [2026-03-30 14:02:15] VOC_NO renumbered for company 5 after deletion, affected rows: 0
+[2026-03-30 16:11:18] Starting delete operation for company ID: 5
+[2026-03-30 16:11:18] Single delete request for ID: 148
+[2026-03-30 16:11:18] Starting reverse for purchase ID: 148
+[2026-03-30 16:11:18] Purchase found: {
+    "date": "2021-04-08",
+    "tp_no": "49",
+    "is_previous_fy": true
+}
+[2026-03-30 16:11:18] Found 1 items with TotBott quantities: [
+    {
+        "ITEM_CODE": "SCMWN0019724",
+        "QTY": 36
+    }
+]
+[2026-03-30 16:11:18] Cascading stock in table: tbldailystock_5_04_21: {
+    "item_code": "SCMWN0019724",
+    "stk_month": "2021-04",
+    "start_day": 8
+}
+[2026-03-30 16:11:18] Start day 8 closing after recalculation: 130
+[2026-03-30 16:11:18] Day 9 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 10 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 11 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 12 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 13 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 14 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 15 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 16 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 17 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 18 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 19 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 20 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 21 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 22 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 23 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 24 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 25 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 26 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 27 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 28 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 29 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Day 30 updated - opening: 130, purchase: 0, sales: 0, new closing: 130
+[2026-03-30 16:11:18] Cascading completed for all days after 8 in tbldailystock_5_04_21
+[2026-03-30 16:11:18] Cascading reversal to FY end: {
+    "item_code": "SCMWN0019724",
+    "purchase_date": "2021-04-08",
+    "purchase_month": 4,
+    "purchase_year": 2021,
+    "fy_end": "2022-3-31",
+    "reduction_qty": 36,
+    "starting_closing": 130
+}
+[2026-03-30 16:11:18] Processing month: tbldailystock_5_05_21: {
+    "monthYear": "2021-05",
+    "daysInMonth": "31",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:18] Updated day 1 opening in tbldailystock_5_05_21 to 130
+[2026-03-30 16:11:18] Month 5/2021 processed, carry forward: 130
+[2026-03-30 16:11:18] Processing month: tbldailystock_5_06_21: {
+    "monthYear": "2021-06",
+    "daysInMonth": "30",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:18] Updated day 1 opening in tbldailystock_5_06_21 to 130
+[2026-03-30 16:11:18] Month 6/2021 processed, carry forward: 130
+[2026-03-30 16:11:18] Processing month: tbldailystock_5_07_21: {
+    "monthYear": "2021-07",
+    "daysInMonth": "31",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:18] Updated day 1 opening in tbldailystock_5_07_21 to 130
+[2026-03-30 16:11:19] Month 7/2021 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_08_21: {
+    "monthYear": "2021-08",
+    "daysInMonth": "31",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_08_21 to 130
+[2026-03-30 16:11:19] Month 8/2021 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_09_21: {
+    "monthYear": "2021-09",
+    "daysInMonth": "30",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_09_21 to 130
+[2026-03-30 16:11:19] Month 9/2021 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_10_21: {
+    "monthYear": "2021-10",
+    "daysInMonth": "31",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_10_21 to 130
+[2026-03-30 16:11:19] Month 10/2021 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_11_21: {
+    "monthYear": "2021-11",
+    "daysInMonth": "30",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_11_21 to 130
+[2026-03-30 16:11:19] Month 11/2021 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_12_21: {
+    "monthYear": "2021-12",
+    "daysInMonth": "31",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_12_21 to 130
+[2026-03-30 16:11:19] Month 12/2021 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_01_22: {
+    "monthYear": "2022-01",
+    "daysInMonth": "31",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_01_22 to 130
+[2026-03-30 16:11:19] Month 1/2022 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_02_22: {
+    "monthYear": "2022-02",
+    "daysInMonth": "28",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_02_22 to 130
+[2026-03-30 16:11:19] Month 2/2022 processed, carry forward: 130
+[2026-03-30 16:11:19] Processing month: tbldailystock_5_03_22: {
+    "monthYear": "2022-03",
+    "daysInMonth": "31",
+    "carry_forward": 130
+}
+[2026-03-30 16:11:19] Updated day 1 opening in tbldailystock_5_03_22 to 130
+[2026-03-30 16:11:19] Month 3/2022 processed, carry forward: 130
+[2026-03-30 16:11:19] Cascading reversal completed to FY end: 2022-3-31
+[2026-03-30 16:11:19] VOC_NO renumbered for company 5 after deletion, affected rows: 0

@@ -1,9 +1,9 @@
-[2026-03-30 14:09:44] === IMPORT PURCHASE STARTED ===
-[2026-03-30 14:09:44] Company ID from session: 5
-[2026-03-30 14:09:44] Database connection included
-[2026-03-30 14:09:44] License functions included
-[2026-03-30 14:09:44] License type: FL-III
-[2026-03-30 14:09:44] Available classes: [
+[2026-03-30 16:43:04] === IMPORT PURCHASE STARTED ===
+[2026-03-30 16:43:04] Company ID from session: 5
+[2026-03-30 16:43:04] Database connection included
+[2026-03-30 16:43:04] License functions included
+[2026-03-30 16:43:04] License type: FL-III
+[2026-03-30 16:43:04] Available classes: [
     {
         "SGROUP": "W",
         "DESC": "Whisky\/Spirit"
@@ -37,7 +37,7 @@
         "DESC": "Rum"
     }
 ]
-[2026-03-30 14:09:44] Allowed class SGROUP values: [
+[2026-03-30 16:43:04] Allowed class SGROUP values: [
     "W",
     "V",
     "M",
@@ -47,288 +47,33 @@
     "G",
     "R"
 ]
-[2026-03-30 14:09:44] === FORM SUBMISSION STARTED ===
-[2026-03-30 14:09:44] Import settings: {
+[2026-03-30 16:43:04] === FORM SUBMISSION STARTED ===
+[2026-03-30 16:43:04] Import settings: {
     "mode": "ALL",
     "default_status": "T",
     "update_mrp": true,
     "update_stock": true
 }
-[2026-03-30 14:09:44] Number of files uploaded: 1
-[2026-03-30 14:09:44] Processing file 1: TPDetails 8 apr.xls
-[2026-03-30 14:09:44] Processing Excel file: TPDetails 8 apr.xls: C:\xampp\tmp\php6967.tmp
-[2026-03-30 14:09:56] Excel file loaded, total rows count: 3
-[2026-03-30 14:09:56] === FIRST 15 ROWS OF EXCEL FILE ===
-[2026-03-30 14:09:56] Row 1: ["Licensee: HOTEL GARVA (492)"]
-[2026-03-30 14:09:56] Row 2: ["TP Details"]
-[2026-03-30 14:09:56] Row 3: ["Received Date","Auto TP No","Manual TP No"]
-[2026-03-30 14:09:56] ====================================
-[2026-03-30 14:09:56] Searching for header row...
-[2026-03-30 14:09:56] Found RECEIVED in row 3, cell: RECEIVED DATE
-[2026-03-30 14:09:56] Found ITEM_CODE in row 3, cell: SCM ITEM CODE
-[2026-03-30 14:09:56] No headers found, trying row 3 as default header row
-[2026-03-30 14:09:56] Default headers from row 3: {
-    "27": "received_date",
-    "28": "auto_tp_no",
-    "29": "manual_tp_no",
-    "30": "tp_date",
-    "31": "district",
-    "32": "scm_party_code",
-    "33": "party_name",
-    "34": "srno",
-    "35": "scm_item_code",
-    "36": "item_name",
-    "37": "size",
-    "38": "qty_cases",
-    "39": "qty_bottles",
-    "40": "batch_no",
-    "41": "mfg_month",
-    "42": "mrp",
-    "43": "bl",
-    "44": "vv_",
-    "45": "total_bot_qty",
-    "46": "transporter_name",
-    "47": "transporter_address",
-    "48": "route",
-    "49": "vehicle_no",
-    "50": "driver_name",
-    "51": "driver_mob_no",
-    "52": "driver_lic_no",
-    "53": "driver_city",
-    "54": "08apr2021",
-    "55": "fl130507042134",
-    "56": "49",
-    "57": "07apr2021",
-    "58": "kolhapur",
-    "59": "scm15180032249",
-    "60": "amar_traders",
-    "61": "1",
-    "62": "scmwn0019724",
-    "63": "sula_port_wine_1000",
-    "64": "375_ml",
-    "65": "1",
-    "66": "12",
-    "67": "dd024",
-    "68": "jan2021",
-    "69": "148",
-    "70": "135",
-    "71": "13",
-    "72": "36",
-    "75": "wia_sagli",
-    "76": "mh12lt0193",
-    "81": "08apr2021",
-    "82": "fl16808042118",
-    "83": "18",
-    "84": "08apr2021",
-    "85": "kolhapur",
-    "86": "scm15180009803",
-    "87": "sai_traders",
-    "88": "1",
-    "89": "scmpl0010198",
-    "90": "master_noi_dr_brandy",
-    "91": "180_ml",
-    "92": "5",
-    "94": "209",
-    "95": "feb2021",
-    "96": "104",
-    "97": "432",
-    "98": "25",
-    "99": "240",
-    "100": "sachin_gavade",
-    "101": "pulachi_shiroli",
-    "102": "sangli",
-    "103": "mh12lt0193",
-    "104": "sachin_gavade",
-    "105": "8421863969",
-    "106": "mh09_20100020816",
-    "107": "shiroli_pulachi",
-    "108": "08apr2021",
-    "109": "fl16808042118",
-    "110": "18",
-    "111": "08apr2021",
-    "112": "kolhapur",
-    "113": "scm15180009803",
-    "114": "sai_traders",
-    "115": "2",
-    "116": "scmpl0012496",
-    "117": "jambo_p_whisky350",
-    "118": "180_ml",
-    "119": "30",
-    "121": "216",
-    "122": "mar2021",
-    "123": "92",
-    "124": "25919999999999999",
-    "125": "35",
-    "126": "1440",
-    "127": "sachin_gavade",
-    "128": "pulachi_shiroli",
-    "129": "sangli",
-    "130": "mh12lt0193",
-    "131": "sachin_gavade",
-    "132": "8421863969",
-    "133": "mh09_20100020816",
-    "134": "shiroli_pulachi",
-    "135": "08apr2021",
-    "136": "fl170080421218",
-    "137": "240",
-    "138": "08apr2021",
-    "139": "kolhapur",
-    "140": "scm15180009805",
-    "141": "haresh_traders",
-    "142": "1",
-    "143": "scmpl0012597",
-    "144": "mcdowells_no1_celebration_xxx_matured_rum",
-    "145": "1000_mlpet",
-    "146": "2",
-    "148": "359",
-    "149": "mar2021",
-    "150": "660",
-    "151": "18",
-    "152": "25",
-    "153": "18",
-    "156": "sangali",
-    "157": "mh12lt0193",
-    "162": "08apr2021",
-    "163": "fl170080421218",
-    "164": "240",
-    "165": "08apr2021",
-    "166": "kolhapur",
-    "167": "scm15180009805",
-    "168": "haresh_traders",
-    "169": "2",
-    "170": "scmpl0010445",
-    "171": "directors_special_black_deluxe_whisky",
-    "172": "180_ml",
-    "173": "4",
-    "175": "990",
-    "176": "mar2021",
-    "177": "140",
-    "178": "3456",
-    "179": "25",
-    "180": "192",
-    "183": "sangali",
-    "184": "mh12lt0193",
-    "189": "08apr2021",
-    "190": "fl170080421218",
-    "191": "240",
-    "192": "08apr2021",
-    "193": "kolhapur",
-    "194": "scm15180009805",
-    "195": "haresh_traders",
-    "196": "3",
-    "197": "scmpl0010612",
-    "198": "directors_special_black_deluxe_whisky",
-    "199": "90_ml_pet100",
-    "200": "1",
-    "202": "990",
-    "203": "mar2021",
-    "204": "75",
-    "205": "9",
-    "206": "25",
-    "207": "100",
-    "210": "sangali",
-    "211": "mh12lt0193",
-    "216": "08apr2021",
-    "217": "fl170080421218",
-    "218": "240",
-    "219": "08apr2021",
-    "220": "kolhapur",
-    "221": "scm15180009805",
-    "222": "haresh_traders",
-    "223": "4",
-    "224": "scmpl0010451",
-    "225": "mcdowells_no_1_original_reserve_whisky",
-    "226": "180_ml",
-    "227": "50",
-    "229": "1073",
-    "230": "mar2021",
-    "231": "150",
-    "232": "432",
-    "233": "25",
-    "234": "2400",
-    "237": "sangali",
-    "238": "mh12lt0193",
-    "243": "08apr2021",
-    "244": "fl177080421151",
-    "245": "161",
-    "246": "08apr2021",
-    "247": "kolhapur",
-    "248": "scm15180009812",
-    "249": "rocky_traders",
-    "250": "1",
-    "251": "scmpl0010676",
-    "252": "brihans_goa_dry_gin__lime",
-    "253": "375_ml",
-    "254": "2",
-    "256": "607",
-    "257": "dec2020",
-    "258": "188",
-    "259": "18",
-    "260": "25",
-    "261": "48",
-    "262": "hari",
-    "263": "gandhinagar",
-    "264": "sangli",
-    "265": "mh09em5199",
-    "266": "santosh_rananavre",
-    "267": "8208595736",
-    "268": "1",
-    "269": "shiroli",
-    "270": "08apr2021",
-    "271": "fl177080421151",
-    "272": "161",
-    "273": "08apr2021",
-    "274": "kolhapur",
-    "275": "scm15180009812",
-    "276": "rocky_traders",
-    "277": "2",
-    "278": "scmpl0010679",
-    "279": "brihans_goa_dry_gin__lime_duet",
-    "280": "180_ml",
-    "281": "7",
-    "283": "888",
-    "284": "mar2021",
-    "285": "92",
-    "286": "6048",
-    "287": "35",
-    "288": "336",
-    "289": "hari",
-    "290": "gandhinagar",
-    "291": "sangli",
-    "292": "mh09em5199",
-    "293": "santosh_rananavre",
-    "294": "8208595736",
-    "295": "1",
-    "296": "shiroli",
-    "297": "08apr2021",
-    "298": "fl1770804214801",
-    "299": "161",
-    "300": "08apr2021",
-    "301": "kolhapur",
-    "302": "scm15180009812",
-    "303": "rocky_traders",
-    "304": "1",
-    "305": "scmpl0010678",
-    "306": "brihans_goa_dry_gin__lime_duet",
-    "307": "90_ml100",
-    "308": "2",
-    "310": "915",
-    "311": "mar2021",
-    "312": "50",
-    "313": "18",
-    "314": "371",
-    "315": "200"
-}
-[2026-03-30 14:09:56] Processing data rows from row 4
-[2026-03-30 14:09:56] Processing complete: Processed 0 data rows, 0 rows had TP numbers, found 0 TP groups
-[2026-03-30 14:09:56] No valid TP data found in Excel. Processed 0 rows but found no TP numbers. Check that your Excel has columns: RECEIVED_DATE, TP_NO (or AUTO_TP_NO), and SCM_ITEM_CODE. Headers found: ["received_date","auto_tp_no","manual_tp_no","tp_date","district","scm_party_code","party_name","srno","scm_item_code","item_name","size","qty_cases","qty_bottles","batch_no","mfg_month","mrp","bl","vv_","total_bot_qty","transporter_name","transporter_address","route","vehicle_no","driver_name","driver_mob_no","driver_lic_no","driver_city","08apr2021","fl130507042134","49","07apr2021","kolhapur","scm15180032249","amar_traders","1","scmwn0019724","sula_port_wine_1000","375_ml","1","12","dd024","jan2021","148","135","13","36","wia_sagli","mh12lt0193","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","1","scmpl0010198","master_noi_dr_brandy","180_ml","5","209","feb2021","104","432","25","240","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","2","scmpl0012496","jambo_p_whisky350","180_ml","30","216","mar2021","92","25919999999999999","35","1440","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","1","scmpl0012597","mcdowells_no1_celebration_xxx_matured_rum","1000_mlpet","2","359","mar2021","660","18","25","18","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","2","scmpl0010445","directors_special_black_deluxe_whisky","180_ml","4","990","mar2021","140","3456","25","192","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","3","scmpl0010612","directors_special_black_deluxe_whisky","90_ml_pet100","1","990","mar2021","75","9","25","100","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","4","scmpl0010451","mcdowells_no_1_original_reserve_whisky","180_ml","50","1073","mar2021","150","432","25","2400","sangali","mh12lt0193","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010676","brihans_goa_dry_gin__lime","375_ml","2","607","dec2020","188","18","25","48","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","2","scmpl0010679","brihans_goa_dry_gin__lime_duet","180_ml","7","888","mar2021","92","6048","35","336","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl1770804214801","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010678","brihans_goa_dry_gin__lime_duet","90_ml100","2","915","mar2021","50","18","371","200"]
-[2026-03-30 14:09:56] === IMPORT PURCHASE ENDED ===
-[2026-03-30 14:18:46] === IMPORT PURCHASE STARTED ===
-[2026-03-30 14:18:46] Company ID from session: 5
-[2026-03-30 14:18:46] Database connection included
-[2026-03-30 14:18:46] License functions included
-[2026-03-30 14:18:46] License type: FL-III
-[2026-03-30 14:18:46] Available classes: [
+[2026-03-30 16:43:04] Number of files uploaded: 1
+[2026-03-30 16:43:04] Processing file 1: TPDetails.xls
+[2026-03-30 16:43:04] Processing Excel file: TPDetails.xls: C:\xampp\tmp\phpCC4A.tmp
+[2026-03-30 16:43:04] File appears to be HTML format, will use Excel parser instead of CSV fallback
+[2026-03-30 16:43:04] Identified file type: Html
+[2026-03-30 16:43:04] File identified as HTML, processing as CSV instead.
+[2026-03-30 16:43:04] Processing CSV file: TPDetails.xls: C:\xampp\tmp\phpCC4A.tmp
+[2026-03-30 16:43:04] CSV file loaded, total rows count: 1
+[2026-03-30 16:43:04] === FIRST 15 ROWS OF CSV FILE ===
+[2026-03-30 16:43:04] Row 1: ["<table  border='1' bgColor='#ffffff' borderColor='#000000' cellSpacing='0' cellPadding='0' style='font-size:10.0pt; font-family:Calibri; background:white;'  ><tr><td colspan='27' align='left'>Licensee: HOTEL GARVA (492)<\/td><\/tr><tr><td colspan='27' align='left'>TP Details<\/td><\/tr><\/tr><td>Received Date<\/td><td>Auto TP No<\/td><td>Manual TP No<\/td><td>TP Date<\/td><td>District<\/td><td>SCM Party Code<\/td><td>Party Name<\/td><td>SrNo<\/td><td>SCM Item Code<\/td><td>Item Name<\/td><td>Size<\/td><td>Qty (Cases)<\/td><td>Qty (Bottles)<\/td><td>Batch No<\/td><td>Mfg. Month<\/td><td>MRP<\/td><td>B.L.<\/td><td>V\/v %<\/td><td>Total Bot. Qty<\/td><td>Transporter Name<\/td><td>Transporter Address<\/td><td>Route<\/td><td>Vehicle No<\/td><td>Driver Name<\/td><td>Driver Mob. No<\/td><td>Driver Lic. No.<\/td><td>Driver City<\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL1305-070421\/34<\/td><td>49<\/td><td>07-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180032249<\/td><td>AMAR TRADERS<\/td><td>1<\/td><td>SCMWN0019724<\/td><td>Sula Port Wine 1000<\/td><td>375 ML<\/td><td>1.00<\/td><td>12.00<\/td><td>DD024<\/td><td>Jan-2021<\/td><td>148.00<\/td><td>13.50<\/td><td>13.0<\/td><td>36.00<\/td><td><\/td><td><\/td><td>WIA SAGLI<\/td><td>MH.12.LT.0193<\/td><td><\/td><td><\/td><td><\/td><td><\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL168-080421\/18<\/td><td>18<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009803<\/td><td>SAI TRADERS<\/td><td>1<\/td><td>SCMPL0010198<\/td><td>MASTER NOI DR BRANDY<\/td><td>180 ML<\/td><td>5.00<\/td><td>0.00<\/td><td>209<\/td><td>Feb-2021<\/td><td>104.00<\/td><td>43.20<\/td><td>25.0<\/td><td>240.00<\/td><td>SACHIN GAVADE<\/td><td>PULACHI SHIROLI<\/td><td>SANGLI<\/td><td>MH12-LT-0193<\/td><td>SACHIN GAVADE<\/td><td>8421863969<\/td><td>MH09 20100020816<\/td><td>SHIROLI PULACHI<\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL168-080421\/18<\/td><td>18<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009803<\/td><td>SAI TRADERS<\/td><td>2<\/td><td>SCMPL0012496<\/td><td>JAMBO P WHISKY(35.0)<\/td><td>180 ML<\/td><td>30.00<\/td><td>0.00<\/td><td>216<\/td><td>Mar-2021<\/td><td>92.00<\/td><td>259.20<\/td><td>35.0<\/td><td>1440.00<\/td><td>SACHIN GAVADE<\/td><td>PULACHI SHIROLI<\/td><td>SANGLI<\/td><td>MH12-LT-0193<\/td><td>SACHIN GAVADE<\/td><td>8421863969<\/td><td>MH09 20100020816<\/td><td>SHIROLI PULACHI<\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL170-080421\/218<\/td><td>240<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009805<\/td><td>HARESH TRADERS<\/td><td>1<\/td><td>SCMPL0012597<\/td><td>McDowell's No.1 Celebration XXX Matured Rum<\/td><td>1000 ML(Pet)<\/td><td>2.00<\/td><td>0.00<\/td><td>359<\/td><td>Mar-2021<\/td><td>660.00<\/td><td>18.00<\/td><td>25.0<\/td><td>18.00<\/td><td><\/td><td><\/td><td>SANGALI<\/td><td>MH-12-LT-0193<\/td><td><\/td><td><\/td><td><\/td><td><\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL170-080421\/218<\/td><td>240<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009805<\/td><td>HARESH TRADERS<\/td><td>2<\/td><td>SCMPL0010445<\/td><td>Directors Special Black Deluxe Whisky<\/td><td>180 ML<\/td><td>4.00<\/td><td>0.00<\/td><td>990<\/td><td>Mar-2021<\/td><td>140.00<\/td><td>34.56<\/td><td>25.0<\/td><td>192.00<\/td><td><\/td><td><\/td><td>SANGALI<\/td><td>MH-12-LT-0193<\/td><td><\/td><td><\/td><td><\/td><td><\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL170-080421\/218<\/td><td>240<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009805<\/td><td>HARESH TRADERS<\/td><td>3<\/td><td>SCMPL0010612<\/td><td>Directors Special Black Deluxe Whisky<\/td><td>90 ML (Pet)-100<\/td><td>1.00<\/td><td>0.00<\/td><td>990<\/td><td>Mar-2021<\/td><td>75.00<\/td><td>9.00<\/td><td>25.0<\/td><td>100.00<\/td><td><\/td><td><\/td><td>SANGALI<\/td><td>MH-12-LT-0193<\/td><td><\/td><td><\/td><td><\/td><td><\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL170-080421\/218<\/td><td>240<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009805<\/td><td>HARESH TRADERS<\/td><td>4<\/td><td>SCMPL0010451<\/td><td>McDowell's No. 1 Original Reserve Whisky<\/td><td>180 ML<\/td><td>50.00<\/td><td>0.00<\/td><td>1073<\/td><td>Mar-2021<\/td><td>150.00<\/td><td>432.00<\/td><td>25.0<\/td><td>2400.00<\/td><td><\/td><td><\/td><td>SANGALI<\/td><td>MH-12-LT-0193<\/td><td><\/td><td><\/td><td><\/td><td><\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL177-080421\/151<\/td><td>161<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009812<\/td><td>ROCKY TRADERS<\/td><td>1<\/td><td>SCMPL0010676<\/td><td>BRIHANS GOA DRY GIN & LIME<\/td><td>375 ML<\/td><td>2.00<\/td><td>0.00<\/td><td>607<\/td><td>Dec-2020<\/td><td>188.00<\/td><td>18.00<\/td><td>25.0<\/td><td>48.00<\/td><td>Hari<\/td><td>GANDHINAGAR<\/td><td>SANGLI<\/td><td>MH-09\/EM-5199<\/td><td>SANTOSH RANANAVRE<\/td><td>8208595736<\/td><td>1<\/td><td>SHIROLI<\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL177-080421\/151<\/td><td>161<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009812<\/td><td>ROCKY TRADERS<\/td><td>2<\/td><td>SCMPL0010679<\/td><td>BRIHANS GOA DRY GIN & LIME DUET<\/td><td>180 ML<\/td><td>7.00<\/td><td>0.00<\/td><td>888<\/td><td>Mar-2021<\/td><td>92.00<\/td><td>60.48<\/td><td>35.0<\/td><td>336.00<\/td><td>Hari<\/td><td>GANDHINAGAR<\/td><td>SANGLI<\/td><td>MH-09\/EM-5199<\/td><td>SANTOSH RANANAVRE<\/td><td>8208595736<\/td><td>1<\/td><td>SHIROLI<\/td><\/tr><\/tr><td>08-Apr-2021<\/td><td>FL177-080421\/4801<\/td><td>161<\/td><td>08-Apr-2021<\/td><td>Kolhapur<\/td><td>SCM15180009812<\/td><td>ROCKY TRADERS<\/td><td>1<\/td><td>SCMPL0010678<\/td><td>BRIHANS GOA DRY GIN & LIME DUET<\/td><td>90 ML(100)<\/td><td>2.00<\/td><td>0.00<\/td><td>915<\/td><td>Mar-2021<\/td><td>50.00<\/td><td>18.00<\/td><td>37.1<\/td><td>200.00<\/td><td><\/td><td><\/td><td><\/td><td><\/td><td><\/td><td><\/td><td><\/td><td><\/td><\/tr><\/table>"]
+[2026-03-30 16:43:04] ====================================
+[2026-03-30 16:43:04] Found RECEIVED in row 1, cell: <TABLE  BORDER='1' BGCOLOR='#FFFFFF' BORDERCOLOR='#000000' CELLSPACING='0' CELLPADDING='0' STYLE='FONT-SIZE:10.0PT; FONT-FAMILY:CALIBRI; BACKGROUND:WHITE;'  ><TR><TD COLSPAN='27' ALIGN='LEFT'>LICENSEE: HOTEL GARVA (492)</TD></TR><TR><TD COLSPAN='27' ALIGN='LEFT'>TP DETAILS</TD></TR></TR><TD>RECEIVED DATE</TD><TD>AUTO TP NO</TD><TD>MANUAL TP NO</TD><TD>TP DATE</TD><TD>DISTRICT</TD><TD>SCM PARTY CODE</TD><TD>PARTY NAME</TD><TD>SRNO</TD><TD>SCM ITEM CODE</TD><TD>ITEM NAME</TD><TD>SIZE</TD><TD>QTY (CASES)</TD><TD>QTY (BOTTLES)</TD><TD>BATCH NO</TD><TD>MFG. MONTH</TD><TD>MRP</TD><TD>B.L.</TD><TD>V/V %</TD><TD>TOTAL BOT. QTY</TD><TD>TRANSPORTER NAME</TD><TD>TRANSPORTER ADDRESS</TD><TD>ROUTE</TD><TD>VEHICLE NO</TD><TD>DRIVER NAME</TD><TD>DRIVER MOB. NO</TD><TD>DRIVER LIC. NO.</TD><TD>DRIVER CITY</TD></TR></TR><TD>08-APR-2021</TD><TD>FL1305-070421/34</TD><TD>49</TD><TD>07-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180032249</TD><TD>AMAR TRADERS</TD><TD>1</TD><TD>SCMWN0019724</TD><TD>SULA PORT WINE 1000</TD><TD>375 ML</TD><TD>1.00</TD><TD>12.00</TD><TD>DD024</TD><TD>JAN-2021</TD><TD>148.00</TD><TD>13.50</TD><TD>13.0</TD><TD>36.00</TD><TD></TD><TD></TD><TD>WIA SAGLI</TD><TD>MH.12.LT.0193</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR></TR><TD>08-APR-2021</TD><TD>FL168-080421/18</TD><TD>18</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009803</TD><TD>SAI TRADERS</TD><TD>1</TD><TD>SCMPL0010198</TD><TD>MASTER NOI DR BRANDY</TD><TD>180 ML</TD><TD>5.00</TD><TD>0.00</TD><TD>209</TD><TD>FEB-2021</TD><TD>104.00</TD><TD>43.20</TD><TD>25.0</TD><TD>240.00</TD><TD>SACHIN GAVADE</TD><TD>PULACHI SHIROLI</TD><TD>SANGLI</TD><TD>MH12-LT-0193</TD><TD>SACHIN GAVADE</TD><TD>8421863969</TD><TD>MH09 20100020816</TD><TD>SHIROLI PULACHI</TD></TR></TR><TD>08-APR-2021</TD><TD>FL168-080421/18</TD><TD>18</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009803</TD><TD>SAI TRADERS</TD><TD>2</TD><TD>SCMPL0012496</TD><TD>JAMBO P WHISKY(35.0)</TD><TD>180 ML</TD><TD>30.00</TD><TD>0.00</TD><TD>216</TD><TD>MAR-2021</TD><TD>92.00</TD><TD>259.20</TD><TD>35.0</TD><TD>1440.00</TD><TD>SACHIN GAVADE</TD><TD>PULACHI SHIROLI</TD><TD>SANGLI</TD><TD>MH12-LT-0193</TD><TD>SACHIN GAVADE</TD><TD>8421863969</TD><TD>MH09 20100020816</TD><TD>SHIROLI PULACHI</TD></TR></TR><TD>08-APR-2021</TD><TD>FL170-080421/218</TD><TD>240</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009805</TD><TD>HARESH TRADERS</TD><TD>1</TD><TD>SCMPL0012597</TD><TD>MCDOWELL'S NO.1 CELEBRATION XXX MATURED RUM</TD><TD>1000 ML(PET)</TD><TD>2.00</TD><TD>0.00</TD><TD>359</TD><TD>MAR-2021</TD><TD>660.00</TD><TD>18.00</TD><TD>25.0</TD><TD>18.00</TD><TD></TD><TD></TD><TD>SANGALI</TD><TD>MH-12-LT-0193</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR></TR><TD>08-APR-2021</TD><TD>FL170-080421/218</TD><TD>240</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009805</TD><TD>HARESH TRADERS</TD><TD>2</TD><TD>SCMPL0010445</TD><TD>DIRECTORS SPECIAL BLACK DELUXE WHISKY</TD><TD>180 ML</TD><TD>4.00</TD><TD>0.00</TD><TD>990</TD><TD>MAR-2021</TD><TD>140.00</TD><TD>34.56</TD><TD>25.0</TD><TD>192.00</TD><TD></TD><TD></TD><TD>SANGALI</TD><TD>MH-12-LT-0193</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR></TR><TD>08-APR-2021</TD><TD>FL170-080421/218</TD><TD>240</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009805</TD><TD>HARESH TRADERS</TD><TD>3</TD><TD>SCMPL0010612</TD><TD>DIRECTORS SPECIAL BLACK DELUXE WHISKY</TD><TD>90 ML (PET)-100</TD><TD>1.00</TD><TD>0.00</TD><TD>990</TD><TD>MAR-2021</TD><TD>75.00</TD><TD>9.00</TD><TD>25.0</TD><TD>100.00</TD><TD></TD><TD></TD><TD>SANGALI</TD><TD>MH-12-LT-0193</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR></TR><TD>08-APR-2021</TD><TD>FL170-080421/218</TD><TD>240</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009805</TD><TD>HARESH TRADERS</TD><TD>4</TD><TD>SCMPL0010451</TD><TD>MCDOWELL'S NO. 1 ORIGINAL RESERVE WHISKY</TD><TD>180 ML</TD><TD>50.00</TD><TD>0.00</TD><TD>1073</TD><TD>MAR-2021</TD><TD>150.00</TD><TD>432.00</TD><TD>25.0</TD><TD>2400.00</TD><TD></TD><TD></TD><TD>SANGALI</TD><TD>MH-12-LT-0193</TD><TD></TD><TD></TD><TD></TD><TD></TD></TR></TR><TD>08-APR-2021</TD><TD>FL177-080421/151</TD><TD>161</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009812</TD><TD>ROCKY TRADERS</TD><TD>1</TD><TD>SCMPL0010676</TD><TD>BRIHANS GOA DRY GIN & LIME</TD><TD>375 ML</TD><TD>2.00</TD><TD>0.00</TD><TD>607</TD><TD>DEC-2020</TD><TD>188.00</TD><TD>18.00</TD><TD>25.0</TD><TD>48.00</TD><TD>HARI</TD><TD>GANDHINAGAR</TD><TD>SANGLI</TD><TD>MH-09/EM-5199</TD><TD>SANTOSH RANANAVRE</TD><TD>8208595736</TD><TD>1</TD><TD>SHIROLI</TD></TR></TR><TD>08-APR-2021</TD><TD>FL177-080421/151</TD><TD>161</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009812</TD><TD>ROCKY TRADERS</TD><TD>2</TD><TD>SCMPL0010679</TD><TD>BRIHANS GOA DRY GIN & LIME DUET</TD><TD>180 ML</TD><TD>7.00</TD><TD>0.00</TD><TD>888</TD><TD>MAR-2021</TD><TD>92.00</TD><TD>60.48</TD><TD>35.0</TD><TD>336.00</TD><TD>HARI</TD><TD>GANDHINAGAR</TD><TD>SANGLI</TD><TD>MH-09/EM-5199</TD><TD>SANTOSH RANANAVRE</TD><TD>8208595736</TD><TD>1</TD><TD>SHIROLI</TD></TR></TR><TD>08-APR-2021</TD><TD>FL177-080421/4801</TD><TD>161</TD><TD>08-APR-2021</TD><TD>KOLHAPUR</TD><TD>SCM15180009812</TD><TD>ROCKY TRADERS</TD><TD>1</TD><TD>SCMPL0010678</TD><TD>BRIHANS GOA DRY GIN & LIME DUET</TD><TD>90 ML(100)</TD><TD>2.00</TD><TD>0.00</TD><TD>915</TD><TD>MAR-2021</TD><TD>50.00</TD><TD>18.00</TD><TD>37.1</TD><TD>200.00</TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD><TD></TD></TR></TABLE>
+[2026-03-30 16:43:04] No header row found in CSV file
+[2026-03-30 16:43:04] === IMPORT PURCHASE ENDED ===
+[2026-03-30 17:06:26] === IMPORT PURCHASE STARTED ===
+[2026-03-30 17:06:26] Company ID from session: 5
+[2026-03-30 17:06:26] Database connection included
+[2026-03-30 17:06:26] License functions included
+[2026-03-30 17:06:26] License type: FL-III
+[2026-03-30 17:06:26] Available classes: [
     {
         "SGROUP": "W",
         "DESC": "Whisky\/Spirit"
@@ -362,7 +107,7 @@
         "DESC": "Rum"
     }
 ]
-[2026-03-30 14:18:46] Allowed class SGROUP values: [
+[2026-03-30 17:06:26] Allowed class SGROUP values: [
     "W",
     "V",
     "M",
@@ -372,288 +117,41 @@
     "G",
     "R"
 ]
-[2026-03-30 14:18:46] === FORM SUBMISSION STARTED ===
-[2026-03-30 14:18:46] Import settings: {
+[2026-03-30 17:06:26] === FORM SUBMISSION STARTED ===
+[2026-03-30 17:06:26] Import settings: {
     "mode": "ALL",
     "default_status": "T",
     "update_mrp": true,
     "update_stock": true
 }
-[2026-03-30 14:18:46] Number of files uploaded: 1
-[2026-03-30 14:18:46] Processing file 1: TPDetails.xls
-[2026-03-30 14:18:46] Processing Excel file: TPDetails.xls: C:\xampp\tmp\phpAF24.tmp
-[2026-03-30 14:18:46] Excel file loaded, total rows count: 3
-[2026-03-30 14:18:46] === FIRST 15 ROWS OF EXCEL FILE ===
-[2026-03-30 14:18:46] Row 1: ["Licensee: HOTEL GARVA (492)"]
-[2026-03-30 14:18:46] Row 2: ["TP Details"]
-[2026-03-30 14:18:46] Row 3: ["Received Date","Auto TP No","Manual TP No"]
-[2026-03-30 14:18:46] ====================================
-[2026-03-30 14:18:46] Searching for header row...
-[2026-03-30 14:18:46] Found RECEIVED in row 3, cell: RECEIVED DATE
-[2026-03-30 14:18:46] Found ITEM_CODE in row 3, cell: SCM ITEM CODE
-[2026-03-30 14:18:46] No headers found, trying row 3 as default header row
-[2026-03-30 14:18:46] Default headers from row 3: {
-    "27": "received_date",
-    "28": "auto_tp_no",
-    "29": "manual_tp_no",
-    "30": "tp_date",
-    "31": "district",
-    "32": "scm_party_code",
-    "33": "party_name",
-    "34": "srno",
-    "35": "scm_item_code",
-    "36": "item_name",
-    "37": "size",
-    "38": "qty_cases",
-    "39": "qty_bottles",
-    "40": "batch_no",
-    "41": "mfg_month",
-    "42": "mrp",
-    "43": "bl",
-    "44": "vv_",
-    "45": "total_bot_qty",
-    "46": "transporter_name",
-    "47": "transporter_address",
-    "48": "route",
-    "49": "vehicle_no",
-    "50": "driver_name",
-    "51": "driver_mob_no",
-    "52": "driver_lic_no",
-    "53": "driver_city",
-    "54": "08apr2021",
-    "55": "fl130507042134",
-    "56": "49",
-    "57": "07apr2021",
-    "58": "kolhapur",
-    "59": "scm15180032249",
-    "60": "amar_traders",
-    "61": "1",
-    "62": "scmwn0019724",
-    "63": "sula_port_wine_1000",
-    "64": "375_ml",
-    "65": "1",
-    "66": "12",
-    "67": "dd024",
-    "68": "jan2021",
-    "69": "148",
-    "70": "135",
-    "71": "13",
-    "72": "36",
-    "75": "wia_sagli",
-    "76": "mh12lt0193",
-    "81": "08apr2021",
-    "82": "fl16808042118",
-    "83": "18",
-    "84": "08apr2021",
-    "85": "kolhapur",
-    "86": "scm15180009803",
-    "87": "sai_traders",
-    "88": "1",
-    "89": "scmpl0010198",
-    "90": "master_noi_dr_brandy",
-    "91": "180_ml",
-    "92": "5",
-    "94": "209",
-    "95": "feb2021",
-    "96": "104",
-    "97": "432",
-    "98": "25",
-    "99": "240",
-    "100": "sachin_gavade",
-    "101": "pulachi_shiroli",
-    "102": "sangli",
-    "103": "mh12lt0193",
-    "104": "sachin_gavade",
-    "105": "8421863969",
-    "106": "mh09_20100020816",
-    "107": "shiroli_pulachi",
-    "108": "08apr2021",
-    "109": "fl16808042118",
-    "110": "18",
-    "111": "08apr2021",
-    "112": "kolhapur",
-    "113": "scm15180009803",
-    "114": "sai_traders",
-    "115": "2",
-    "116": "scmpl0012496",
-    "117": "jambo_p_whisky350",
-    "118": "180_ml",
-    "119": "30",
-    "121": "216",
-    "122": "mar2021",
-    "123": "92",
-    "124": "25919999999999999",
-    "125": "35",
-    "126": "1440",
-    "127": "sachin_gavade",
-    "128": "pulachi_shiroli",
-    "129": "sangli",
-    "130": "mh12lt0193",
-    "131": "sachin_gavade",
-    "132": "8421863969",
-    "133": "mh09_20100020816",
-    "134": "shiroli_pulachi",
-    "135": "08apr2021",
-    "136": "fl170080421218",
-    "137": "240",
-    "138": "08apr2021",
-    "139": "kolhapur",
-    "140": "scm15180009805",
-    "141": "haresh_traders",
-    "142": "1",
-    "143": "scmpl0012597",
-    "144": "mcdowells_no1_celebration_xxx_matured_rum",
-    "145": "1000_mlpet",
-    "146": "2",
-    "148": "359",
-    "149": "mar2021",
-    "150": "660",
-    "151": "18",
-    "152": "25",
-    "153": "18",
-    "156": "sangali",
-    "157": "mh12lt0193",
-    "162": "08apr2021",
-    "163": "fl170080421218",
-    "164": "240",
-    "165": "08apr2021",
-    "166": "kolhapur",
-    "167": "scm15180009805",
-    "168": "haresh_traders",
-    "169": "2",
-    "170": "scmpl0010445",
-    "171": "directors_special_black_deluxe_whisky",
-    "172": "180_ml",
-    "173": "4",
-    "175": "990",
-    "176": "mar2021",
-    "177": "140",
-    "178": "3456",
-    "179": "25",
-    "180": "192",
-    "183": "sangali",
-    "184": "mh12lt0193",
-    "189": "08apr2021",
-    "190": "fl170080421218",
-    "191": "240",
-    "192": "08apr2021",
-    "193": "kolhapur",
-    "194": "scm15180009805",
-    "195": "haresh_traders",
-    "196": "3",
-    "197": "scmpl0010612",
-    "198": "directors_special_black_deluxe_whisky",
-    "199": "90_ml_pet100",
-    "200": "1",
-    "202": "990",
-    "203": "mar2021",
-    "204": "75",
-    "205": "9",
-    "206": "25",
-    "207": "100",
-    "210": "sangali",
-    "211": "mh12lt0193",
-    "216": "08apr2021",
-    "217": "fl170080421218",
-    "218": "240",
-    "219": "08apr2021",
-    "220": "kolhapur",
-    "221": "scm15180009805",
-    "222": "haresh_traders",
-    "223": "4",
-    "224": "scmpl0010451",
-    "225": "mcdowells_no_1_original_reserve_whisky",
-    "226": "180_ml",
-    "227": "50",
-    "229": "1073",
-    "230": "mar2021",
-    "231": "150",
-    "232": "432",
-    "233": "25",
-    "234": "2400",
-    "237": "sangali",
-    "238": "mh12lt0193",
-    "243": "08apr2021",
-    "244": "fl177080421151",
-    "245": "161",
-    "246": "08apr2021",
-    "247": "kolhapur",
-    "248": "scm15180009812",
-    "249": "rocky_traders",
-    "250": "1",
-    "251": "scmpl0010676",
-    "252": "brihans_goa_dry_gin__lime",
-    "253": "375_ml",
-    "254": "2",
-    "256": "607",
-    "257": "dec2020",
-    "258": "188",
-    "259": "18",
-    "260": "25",
-    "261": "48",
-    "262": "hari",
-    "263": "gandhinagar",
-    "264": "sangli",
-    "265": "mh09em5199",
-    "266": "santosh_rananavre",
-    "267": "8208595736",
-    "268": "1",
-    "269": "shiroli",
-    "270": "08apr2021",
-    "271": "fl177080421151",
-    "272": "161",
-    "273": "08apr2021",
-    "274": "kolhapur",
-    "275": "scm15180009812",
-    "276": "rocky_traders",
-    "277": "2",
-    "278": "scmpl0010679",
-    "279": "brihans_goa_dry_gin__lime_duet",
-    "280": "180_ml",
-    "281": "7",
-    "283": "888",
-    "284": "mar2021",
-    "285": "92",
-    "286": "6048",
-    "287": "35",
-    "288": "336",
-    "289": "hari",
-    "290": "gandhinagar",
-    "291": "sangli",
-    "292": "mh09em5199",
-    "293": "santosh_rananavre",
-    "294": "8208595736",
-    "295": "1",
-    "296": "shiroli",
-    "297": "08apr2021",
-    "298": "fl1770804214801",
-    "299": "161",
-    "300": "08apr2021",
-    "301": "kolhapur",
-    "302": "scm15180009812",
-    "303": "rocky_traders",
-    "304": "1",
-    "305": "scmpl0010678",
-    "306": "brihans_goa_dry_gin__lime_duet",
-    "307": "90_ml100",
-    "308": "2",
-    "310": "915",
-    "311": "mar2021",
-    "312": "50",
-    "313": "18",
-    "314": "371",
-    "315": "200"
-}
-[2026-03-30 14:18:46] Processing data rows from row 4
-[2026-03-30 14:18:46] Processing complete: Processed 0 data rows, 0 rows had TP numbers, found 0 TP groups
-[2026-03-30 14:18:46] No valid TP data found in Excel. Processed 0 rows but found no TP numbers. Check that your Excel has columns: RECEIVED_DATE, TP_NO (or AUTO_TP_NO), and SCM_ITEM_CODE. Headers found: ["received_date","auto_tp_no","manual_tp_no","tp_date","district","scm_party_code","party_name","srno","scm_item_code","item_name","size","qty_cases","qty_bottles","batch_no","mfg_month","mrp","bl","vv_","total_bot_qty","transporter_name","transporter_address","route","vehicle_no","driver_name","driver_mob_no","driver_lic_no","driver_city","08apr2021","fl130507042134","49","07apr2021","kolhapur","scm15180032249","amar_traders","1","scmwn0019724","sula_port_wine_1000","375_ml","1","12","dd024","jan2021","148","135","13","36","wia_sagli","mh12lt0193","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","1","scmpl0010198","master_noi_dr_brandy","180_ml","5","209","feb2021","104","432","25","240","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","2","scmpl0012496","jambo_p_whisky350","180_ml","30","216","mar2021","92","25919999999999999","35","1440","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","1","scmpl0012597","mcdowells_no1_celebration_xxx_matured_rum","1000_mlpet","2","359","mar2021","660","18","25","18","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","2","scmpl0010445","directors_special_black_deluxe_whisky","180_ml","4","990","mar2021","140","3456","25","192","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","3","scmpl0010612","directors_special_black_deluxe_whisky","90_ml_pet100","1","990","mar2021","75","9","25","100","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","4","scmpl0010451","mcdowells_no_1_original_reserve_whisky","180_ml","50","1073","mar2021","150","432","25","2400","sangali","mh12lt0193","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010676","brihans_goa_dry_gin__lime","375_ml","2","607","dec2020","188","18","25","48","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","2","scmpl0010679","brihans_goa_dry_gin__lime_duet","180_ml","7","888","mar2021","92","6048","35","336","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl1770804214801","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010678","brihans_goa_dry_gin__lime_duet","90_ml100","2","915","mar2021","50","18","371","200"]
-[2026-03-30 14:18:46] === IMPORT PURCHASE ENDED ===
-[2026-03-30 14:40:36] === IMPORT PURCHASE STARTED ===
-[2026-03-30 14:40:36] Company ID from session: 5
-[2026-03-30 14:40:36] Database connection included
-[2026-03-30 14:40:36] License functions included
-[2026-03-30 14:40:36] License type: FL-III
-[2026-03-30 14:40:36] Available classes: [
+[2026-03-30 17:06:26] Number of files uploaded: 1
+[2026-03-30 17:06:26] Processing file 1: TPDetails  11 aug.xls
+[2026-03-30 17:06:26] Processing Excel file: TPDetails  11 aug.xls: C:\xampp\tmp\php32CF.tmp
+[2026-03-30 17:06:27] Identified file type: Html
+[2026-03-30 17:06:27] Row-by-row iteration returned 3 rows from 3 iterations
+[2026-03-30 17:06:27] === FIRST 15 ROWS FROM ROW-BY-ROW ITERATION ===
+[2026-03-30 17:06:27] Iter Row 1: ["Licensee: HOTEL GARVA (492)"]
+[2026-03-30 17:06:27] Iter Row 2: ["TP Details"]
+[2026-03-30 17:06:27] Iter Row 3: ["Received Date","Auto TP No","Manual TP No"]
+[2026-03-30 17:06:27] ===========================================
+[2026-03-30 17:06:27] Excel file loaded, total rows count: 3
+[2026-03-30 17:06:27] Using row 3 as headers
+[2026-03-30 17:06:27] Processed 0 rows, 0 with TP numbers, found 0 TP groups
+[2026-03-30 17:06:27] No TP groups found in Excel, trying CSV fallback
+[2026-03-30 17:06:27] Processing CSV file: TPDetails  11 aug.xls: C:\xampp\tmp\php32CF.tmp
+[2026-03-30 17:06:27] CSV file loaded, total rows count: 1
+[2026-03-30 17:06:27] === FIRST 15 ROWS OF CSV FILE ===
+[2026-03-30 17:06:27] Row 1: ["<table  border='1' bgColor='#ffffff' borderColor='#000000' cellSpacing='0' cellPadding='0' style='font-size:10.0pt; font-family:Calibri; background:white;'  ><tr><td colspan='27' align='left'>Licensee: HOTEL GARVA (492)<\/td><\/tr><tr><td colspan='27' align='left'>TP Details<\/td><\/tr><\/tr><td>Received Date<\/td><td>Auto TP No<\/td><td>Manual TP No<\/td><td>TP Date<\/td><td>District<\/td><td>SCM Party Code<\/td><td>Party Name<\/td><td>SrNo<\/td><td>SCM Item Code<\/td><td>Item Name<\/td><td>Size<\/td><td>Qty (Cases)<\/td><td>Qty (Bottles)<\/td><td>Batch No<\/td><td>Mfg. Month<\/td><td>MRP<\/td><td>B.L.<\/td><td>V\/v %<\/td><td>Total Bot. Qty<\/td><td>Transporter Name<\/td><td>Transporter Address<\/td><td>Route<\/td><td>Vehicle No<\/td><td>Driver Name<\/td><td>Driver Mob. No<\/td><td>Driver Lic. No.<\/td><td>Driver City<\/td><\/tr><\/tr><td>11-Aug-2021<\/td><td>FL1249-110821\/1579<\/td><td>1726<\/td><td>11-Aug-2021<\/td><td>Sangli<\/td><td>SCM28180010688<\/td><td>EMPIRE SPIRIT INDIA<\/td><td>1<\/td><td>SCMPL0010078<\/td><td>Seagram's 100 Pipers Deluxe Blended Scotch Whisky<\/td><td>180 ML<\/td><td>0.00<\/td><td>3.00<\/td><td>3109<\/td><td>Mar-2021<\/td><td>630.00<\/td><td>0.54<\/td><td>42.8<\/td><td>3.00<\/td><td>EMPIRE SPIRIT INDIA<\/td><td>MIRAJ<\/td><td>MIRAJ- SAVLAJ<\/td><td>MH-11-CQ-9562<\/td><td>PRAMOD MAISHLKAR<\/td><td>7620804798<\/td><td>MH10 21047<\/td><td>MIRAJ<\/td><\/tr><\/tr><td>11-Aug-2021<\/td><td>FL1249-110821\/1579<\/td><td>1726<\/td><td>11-Aug-2021<\/td><td>Sangli<\/td><td>SCM28180010688<\/td><td>EMPIRE SPIRIT INDIA<\/td><td>2<\/td><td>SCMPL0010096<\/td><td>Seagram's Royal Stag Barrel Select Whisky<\/td><td>180 ML<\/td><td>0.00<\/td><td>24.00<\/td><td>0984<\/td><td>Jul-2021<\/td><td>225.00<\/td><td>4.32<\/td><td>42.8<\/td><td>24.00<\/td><td>EMPIRE SPIRIT INDIA<\/td><td>MIRAJ<\/td><td>MIRAJ- SAVLAJ<\/td><td>MH-11-CQ-9562<\/td><td>PRAMOD MAISHLKAR<\/td><td>7620804798<\/td><td>MH10 21047<\/td><td>MIRAJ<\/td><\/tr><\/tr><td>11-Aug-2021<\/td><td>FL1249-110821\/1579<\/td><td>1726<\/td><td>11-Aug-2021<\/td><td>Sangli<\/td><td>SCM28180010688<\/td><td>EMPIRE SPIRIT INDIA<\/td><td>3<\/td><td>SCMPL0010702<\/td><td>Seagram's Blenders Pride Ultra Premium Whisky<\/td><td>180 ML<\/td><td>1.00<\/td><td>0.00<\/td><td>1073<\/td><td>Aug-2021<\/td><td>335.00<\/td><td>8.64<\/td><td>42.8<\/td><td>48.00<\/td><td>EMPIRE SPIRIT INDIA<\/td><td>MIRAJ<\/td><td>MIRAJ- SAVLAJ<\/td><td>MH-11-CQ-9562<\/td><td>PRAMOD MAISHLKAR<\/td><td>7620804798<\/td><td>MH10 21047<\/td><td>MIRAJ<\/td><\/tr><\/table>"]
+[2026-03-30 17:06:27] ====================================
+[2026-03-30 17:06:27] Found RECEIVED in row 1, cell: <TABLE  BORDER='1' BGCOLOR='#FFFFFF' BORDERCOLOR='#000000' CELLSPACING='0' CELLPADDING='0' STYLE='FONT-SIZE:10.0PT; FONT-FAMILY:CALIBRI; BACKGROUND:WHITE;'  ><TR><TD COLSPAN='27' ALIGN='LEFT'>LICENSEE: HOTEL GARVA (492)</TD></TR><TR><TD COLSPAN='27' ALIGN='LEFT'>TP DETAILS</TD></TR></TR><TD>RECEIVED DATE</TD><TD>AUTO TP NO</TD><TD>MANUAL TP NO</TD><TD>TP DATE</TD><TD>DISTRICT</TD><TD>SCM PARTY CODE</TD><TD>PARTY NAME</TD><TD>SRNO</TD><TD>SCM ITEM CODE</TD><TD>ITEM NAME</TD><TD>SIZE</TD><TD>QTY (CASES)</TD><TD>QTY (BOTTLES)</TD><TD>BATCH NO</TD><TD>MFG. MONTH</TD><TD>MRP</TD><TD>B.L.</TD><TD>V/V %</TD><TD>TOTAL BOT. QTY</TD><TD>TRANSPORTER NAME</TD><TD>TRANSPORTER ADDRESS</TD><TD>ROUTE</TD><TD>VEHICLE NO</TD><TD>DRIVER NAME</TD><TD>DRIVER MOB. NO</TD><TD>DRIVER LIC. NO.</TD><TD>DRIVER CITY</TD></TR></TR><TD>11-AUG-2021</TD><TD>FL1249-110821/1579</TD><TD>1726</TD><TD>11-AUG-2021</TD><TD>SANGLI</TD><TD>SCM28180010688</TD><TD>EMPIRE SPIRIT INDIA</TD><TD>1</TD><TD>SCMPL0010078</TD><TD>SEAGRAM'S 100 PIPERS DELUXE BLENDED SCOTCH WHISKY</TD><TD>180 ML</TD><TD>0.00</TD><TD>3.00</TD><TD>3109</TD><TD>MAR-2021</TD><TD>630.00</TD><TD>0.54</TD><TD>42.8</TD><TD>3.00</TD><TD>EMPIRE SPIRIT INDIA</TD><TD>MIRAJ</TD><TD>MIRAJ- SAVLAJ</TD><TD>MH-11-CQ-9562</TD><TD>PRAMOD MAISHLKAR</TD><TD>7620804798</TD><TD>MH10 21047</TD><TD>MIRAJ</TD></TR></TR><TD>11-AUG-2021</TD><TD>FL1249-110821/1579</TD><TD>1726</TD><TD>11-AUG-2021</TD><TD>SANGLI</TD><TD>SCM28180010688</TD><TD>EMPIRE SPIRIT INDIA</TD><TD>2</TD><TD>SCMPL0010096</TD><TD>SEAGRAM'S ROYAL STAG BARREL SELECT WHISKY</TD><TD>180 ML</TD><TD>0.00</TD><TD>24.00</TD><TD>0984</TD><TD>JUL-2021</TD><TD>225.00</TD><TD>4.32</TD><TD>42.8</TD><TD>24.00</TD><TD>EMPIRE SPIRIT INDIA</TD><TD>MIRAJ</TD><TD>MIRAJ- SAVLAJ</TD><TD>MH-11-CQ-9562</TD><TD>PRAMOD MAISHLKAR</TD><TD>7620804798</TD><TD>MH10 21047</TD><TD>MIRAJ</TD></TR></TR><TD>11-AUG-2021</TD><TD>FL1249-110821/1579</TD><TD>1726</TD><TD>11-AUG-2021</TD><TD>SANGLI</TD><TD>SCM28180010688</TD><TD>EMPIRE SPIRIT INDIA</TD><TD>3</TD><TD>SCMPL0010702</TD><TD>SEAGRAM'S BLENDERS PRIDE ULTRA PREMIUM WHISKY</TD><TD>180 ML</TD><TD>1.00</TD><TD>0.00</TD><TD>1073</TD><TD>AUG-2021</TD><TD>335.00</TD><TD>8.64</TD><TD>42.8</TD><TD>48.00</TD><TD>EMPIRE SPIRIT INDIA</TD><TD>MIRAJ</TD><TD>MIRAJ- SAVLAJ</TD><TD>MH-11-CQ-9562</TD><TD>PRAMOD MAISHLKAR</TD><TD>7620804798</TD><TD>MH10 21047</TD><TD>MIRAJ</TD></TR></TABLE>
+[2026-03-30 17:06:27] No header row found in CSV file
+[2026-03-30 17:06:27] === IMPORT PURCHASE ENDED ===
+[2026-03-31 05:48:40] === IMPORT PURCHASE STARTED ===
+[2026-03-31 05:48:40] Company ID from session: 5
+[2026-03-31 05:48:40] Database connection included
+[2026-03-31 05:48:40] License functions included
+[2026-03-31 05:48:40] License type: FL-III
+[2026-03-31 05:48:40] Available classes: [
     {
         "SGROUP": "W",
         "DESC": "Whisky\/Spirit"
@@ -687,7 +185,7 @@
         "DESC": "Rum"
     }
 ]
-[2026-03-30 14:40:36] Allowed class SGROUP values: [
+[2026-03-31 05:48:40] Allowed class SGROUP values: [
     "W",
     "V",
     "M",
@@ -697,288 +195,26 @@
     "G",
     "R"
 ]
-[2026-03-30 14:40:36] === FORM SUBMISSION STARTED ===
-[2026-03-30 14:40:36] Import settings: {
-    "mode": "ALL",
-    "default_status": "T",
-    "update_mrp": true,
-    "update_stock": true
+[2026-03-31 05:48:40] === FORM SUBMISSION STARTED ===
+[2026-03-31 05:48:40] Import settings: {
+    "importMode": "ALL",
+    "defaultStatus": "T",
+    "updateMRP": true,
+    "updateStockFlag": true
 }
-[2026-03-30 14:40:36] Number of files uploaded: 1
-[2026-03-30 14:40:36] Processing file 1: TPDetails.xls
-[2026-03-30 14:40:36] Processing Excel file: TPDetails.xls: C:\xampp\tmp\phpADAD.tmp
-[2026-03-30 14:40:36] Excel file loaded, total rows count: 3
-[2026-03-30 14:40:36] === FIRST 15 ROWS OF EXCEL FILE ===
-[2026-03-30 14:40:36] Row 1: ["Licensee: HOTEL GARVA (492)"]
-[2026-03-30 14:40:36] Row 2: ["TP Details"]
-[2026-03-30 14:40:36] Row 3: ["Received Date","Auto TP No","Manual TP No"]
-[2026-03-30 14:40:36] ====================================
-[2026-03-30 14:40:36] Searching for header row...
-[2026-03-30 14:40:36] Found RECEIVED in row 3, cell: RECEIVED DATE
-[2026-03-30 14:40:36] Found ITEM_CODE in row 3, cell: SCM ITEM CODE
-[2026-03-30 14:40:36] No headers found, trying row 3 as default header row
-[2026-03-30 14:40:36] Default headers from row 3: {
-    "27": "received_date",
-    "28": "auto_tp_no",
-    "29": "manual_tp_no",
-    "30": "tp_date",
-    "31": "district",
-    "32": "scm_party_code",
-    "33": "party_name",
-    "34": "srno",
-    "35": "scm_item_code",
-    "36": "item_name",
-    "37": "size",
-    "38": "qty_cases",
-    "39": "qty_bottles",
-    "40": "batch_no",
-    "41": "mfg_month",
-    "42": "mrp",
-    "43": "bl",
-    "44": "vv_",
-    "45": "total_bot_qty",
-    "46": "transporter_name",
-    "47": "transporter_address",
-    "48": "route",
-    "49": "vehicle_no",
-    "50": "driver_name",
-    "51": "driver_mob_no",
-    "52": "driver_lic_no",
-    "53": "driver_city",
-    "54": "08apr2021",
-    "55": "fl130507042134",
-    "56": "49",
-    "57": "07apr2021",
-    "58": "kolhapur",
-    "59": "scm15180032249",
-    "60": "amar_traders",
-    "61": "1",
-    "62": "scmwn0019724",
-    "63": "sula_port_wine_1000",
-    "64": "375_ml",
-    "65": "1",
-    "66": "12",
-    "67": "dd024",
-    "68": "jan2021",
-    "69": "148",
-    "70": "135",
-    "71": "13",
-    "72": "36",
-    "75": "wia_sagli",
-    "76": "mh12lt0193",
-    "81": "08apr2021",
-    "82": "fl16808042118",
-    "83": "18",
-    "84": "08apr2021",
-    "85": "kolhapur",
-    "86": "scm15180009803",
-    "87": "sai_traders",
-    "88": "1",
-    "89": "scmpl0010198",
-    "90": "master_noi_dr_brandy",
-    "91": "180_ml",
-    "92": "5",
-    "94": "209",
-    "95": "feb2021",
-    "96": "104",
-    "97": "432",
-    "98": "25",
-    "99": "240",
-    "100": "sachin_gavade",
-    "101": "pulachi_shiroli",
-    "102": "sangli",
-    "103": "mh12lt0193",
-    "104": "sachin_gavade",
-    "105": "8421863969",
-    "106": "mh09_20100020816",
-    "107": "shiroli_pulachi",
-    "108": "08apr2021",
-    "109": "fl16808042118",
-    "110": "18",
-    "111": "08apr2021",
-    "112": "kolhapur",
-    "113": "scm15180009803",
-    "114": "sai_traders",
-    "115": "2",
-    "116": "scmpl0012496",
-    "117": "jambo_p_whisky350",
-    "118": "180_ml",
-    "119": "30",
-    "121": "216",
-    "122": "mar2021",
-    "123": "92",
-    "124": "25919999999999999",
-    "125": "35",
-    "126": "1440",
-    "127": "sachin_gavade",
-    "128": "pulachi_shiroli",
-    "129": "sangli",
-    "130": "mh12lt0193",
-    "131": "sachin_gavade",
-    "132": "8421863969",
-    "133": "mh09_20100020816",
-    "134": "shiroli_pulachi",
-    "135": "08apr2021",
-    "136": "fl170080421218",
-    "137": "240",
-    "138": "08apr2021",
-    "139": "kolhapur",
-    "140": "scm15180009805",
-    "141": "haresh_traders",
-    "142": "1",
-    "143": "scmpl0012597",
-    "144": "mcdowells_no1_celebration_xxx_matured_rum",
-    "145": "1000_mlpet",
-    "146": "2",
-    "148": "359",
-    "149": "mar2021",
-    "150": "660",
-    "151": "18",
-    "152": "25",
-    "153": "18",
-    "156": "sangali",
-    "157": "mh12lt0193",
-    "162": "08apr2021",
-    "163": "fl170080421218",
-    "164": "240",
-    "165": "08apr2021",
-    "166": "kolhapur",
-    "167": "scm15180009805",
-    "168": "haresh_traders",
-    "169": "2",
-    "170": "scmpl0010445",
-    "171": "directors_special_black_deluxe_whisky",
-    "172": "180_ml",
-    "173": "4",
-    "175": "990",
-    "176": "mar2021",
-    "177": "140",
-    "178": "3456",
-    "179": "25",
-    "180": "192",
-    "183": "sangali",
-    "184": "mh12lt0193",
-    "189": "08apr2021",
-    "190": "fl170080421218",
-    "191": "240",
-    "192": "08apr2021",
-    "193": "kolhapur",
-    "194": "scm15180009805",
-    "195": "haresh_traders",
-    "196": "3",
-    "197": "scmpl0010612",
-    "198": "directors_special_black_deluxe_whisky",
-    "199": "90_ml_pet100",
-    "200": "1",
-    "202": "990",
-    "203": "mar2021",
-    "204": "75",
-    "205": "9",
-    "206": "25",
-    "207": "100",
-    "210": "sangali",
-    "211": "mh12lt0193",
-    "216": "08apr2021",
-    "217": "fl170080421218",
-    "218": "240",
-    "219": "08apr2021",
-    "220": "kolhapur",
-    "221": "scm15180009805",
-    "222": "haresh_traders",
-    "223": "4",
-    "224": "scmpl0010451",
-    "225": "mcdowells_no_1_original_reserve_whisky",
-    "226": "180_ml",
-    "227": "50",
-    "229": "1073",
-    "230": "mar2021",
-    "231": "150",
-    "232": "432",
-    "233": "25",
-    "234": "2400",
-    "237": "sangali",
-    "238": "mh12lt0193",
-    "243": "08apr2021",
-    "244": "fl177080421151",
-    "245": "161",
-    "246": "08apr2021",
-    "247": "kolhapur",
-    "248": "scm15180009812",
-    "249": "rocky_traders",
-    "250": "1",
-    "251": "scmpl0010676",
-    "252": "brihans_goa_dry_gin__lime",
-    "253": "375_ml",
-    "254": "2",
-    "256": "607",
-    "257": "dec2020",
-    "258": "188",
-    "259": "18",
-    "260": "25",
-    "261": "48",
-    "262": "hari",
-    "263": "gandhinagar",
-    "264": "sangli",
-    "265": "mh09em5199",
-    "266": "santosh_rananavre",
-    "267": "8208595736",
-    "268": "1",
-    "269": "shiroli",
-    "270": "08apr2021",
-    "271": "fl177080421151",
-    "272": "161",
-    "273": "08apr2021",
-    "274": "kolhapur",
-    "275": "scm15180009812",
-    "276": "rocky_traders",
-    "277": "2",
-    "278": "scmpl0010679",
-    "279": "brihans_goa_dry_gin__lime_duet",
-    "280": "180_ml",
-    "281": "7",
-    "283": "888",
-    "284": "mar2021",
-    "285": "92",
-    "286": "6048",
-    "287": "35",
-    "288": "336",
-    "289": "hari",
-    "290": "gandhinagar",
-    "291": "sangli",
-    "292": "mh09em5199",
-    "293": "santosh_rananavre",
-    "294": "8208595736",
-    "295": "1",
-    "296": "shiroli",
-    "297": "08apr2021",
-    "298": "fl1770804214801",
-    "299": "161",
-    "300": "08apr2021",
-    "301": "kolhapur",
-    "302": "scm15180009812",
-    "303": "rocky_traders",
-    "304": "1",
-    "305": "scmpl0010678",
-    "306": "brihans_goa_dry_gin__lime_duet",
-    "307": "90_ml100",
-    "308": "2",
-    "310": "915",
-    "311": "mar2021",
-    "312": "50",
-    "313": "18",
-    "314": "371",
-    "315": "200"
-}
-[2026-03-30 14:40:36] Processing data rows from row 4
-[2026-03-30 14:40:36] Processing complete: Processed 0 data rows, 0 rows had TP numbers, found 0 TP groups
-[2026-03-30 14:40:36] No valid TP data found in Excel. Processed 0 rows but found no TP numbers. Check that your Excel has columns: RECEIVED_DATE, TP_NO (or AUTO_TP_NO), and SCM_ITEM_CODE. Headers found: ["received_date","auto_tp_no","manual_tp_no","tp_date","district","scm_party_code","party_name","srno","scm_item_code","item_name","size","qty_cases","qty_bottles","batch_no","mfg_month","mrp","bl","vv_","total_bot_qty","transporter_name","transporter_address","route","vehicle_no","driver_name","driver_mob_no","driver_lic_no","driver_city","08apr2021","fl130507042134","49","07apr2021","kolhapur","scm15180032249","amar_traders","1","scmwn0019724","sula_port_wine_1000","375_ml","1","12","dd024","jan2021","148","135","13","36","wia_sagli","mh12lt0193","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","1","scmpl0010198","master_noi_dr_brandy","180_ml","5","209","feb2021","104","432","25","240","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","2","scmpl0012496","jambo_p_whisky350","180_ml","30","216","mar2021","92","25919999999999999","35","1440","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","1","scmpl0012597","mcdowells_no1_celebration_xxx_matured_rum","1000_mlpet","2","359","mar2021","660","18","25","18","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","2","scmpl0010445","directors_special_black_deluxe_whisky","180_ml","4","990","mar2021","140","3456","25","192","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","3","scmpl0010612","directors_special_black_deluxe_whisky","90_ml_pet100","1","990","mar2021","75","9","25","100","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","4","scmpl0010451","mcdowells_no_1_original_reserve_whisky","180_ml","50","1073","mar2021","150","432","25","2400","sangali","mh12lt0193","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010676","brihans_goa_dry_gin__lime","375_ml","2","607","dec2020","188","18","25","48","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","2","scmpl0010679","brihans_goa_dry_gin__lime_duet","180_ml","7","888","mar2021","92","6048","35","336","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl1770804214801","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010678","brihans_goa_dry_gin__lime_duet","90_ml100","2","915","mar2021","50","18","371","200"]
-[2026-03-30 14:40:36] === IMPORT PURCHASE ENDED ===
-[2026-03-30 14:41:38] === IMPORT PURCHASE STARTED ===
-[2026-03-30 14:41:38] Company ID from session: 5
-[2026-03-30 14:41:38] Database connection included
-[2026-03-30 14:41:38] License functions included
-[2026-03-30 14:41:38] License type: FL-III
-[2026-03-30 14:41:38] Available classes: [
+[2026-03-31 05:48:40] Number of files uploaded: 1
+[2026-03-31 05:48:40] Processing file: TPDetails.xls
+[2026-03-31 05:48:40] Processing file: TPDetails.xls
+[2026-03-31 05:48:40] File identified as HTML format - using HTML parser
+[2026-03-31 05:48:40] ===== PROCESSING HTML TABLE FILE =====: TPDetails.xls
+[2026-03-31 05:48:40] Found 2 table rows
+[2026-03-31 05:48:40] Extracted 0 valid data rows
+[2026-03-31 05:58:48] === IMPORT PURCHASE STARTED ===
+[2026-03-31 05:58:48] Company ID from session: 5
+[2026-03-31 05:58:48] Database connection included
+[2026-03-31 05:58:48] License functions included
+[2026-03-31 05:58:48] License type: FL-III
+[2026-03-31 05:58:48] Available classes: [
     {
         "SGROUP": "W",
         "DESC": "Whisky\/Spirit"
@@ -1012,7 +248,7 @@
         "DESC": "Rum"
     }
 ]
-[2026-03-30 14:41:38] Allowed class SGROUP values: [
+[2026-03-31 05:58:48] Allowed class SGROUP values: [
     "W",
     "V",
     "M",
@@ -1022,279 +258,83 @@
     "G",
     "R"
 ]
-[2026-03-30 14:41:38] === FORM SUBMISSION STARTED ===
-[2026-03-30 14:41:38] Import settings: {
-    "mode": "ALL",
-    "default_status": "T",
-    "update_mrp": true,
-    "update_stock": true
+[2026-03-31 05:58:48] === FORM SUBMISSION STARTED ===
+[2026-03-31 05:58:48] Import settings: {
+    "importMode": "ALL",
+    "defaultStatus": "T",
+    "updateMRP": true,
+    "updateStockFlag": true
 }
-[2026-03-30 14:41:38] Number of files uploaded: 1
-[2026-03-30 14:41:38] Processing file 1: TPDetails.xls
-[2026-03-30 14:41:38] Processing Excel file: TPDetails.xls: C:\xampp\tmp\phpA184.tmp
-[2026-03-30 14:41:39] Excel file loaded, total rows count: 3
-[2026-03-30 14:41:39] === FIRST 15 ROWS OF EXCEL FILE ===
-[2026-03-30 14:41:39] Row 1: ["Licensee: HOTEL GARVA (492)"]
-[2026-03-30 14:41:39] Row 2: ["TP Details"]
-[2026-03-30 14:41:39] Row 3: ["Received Date","Auto TP No","Manual TP No"]
-[2026-03-30 14:41:39] ====================================
-[2026-03-30 14:41:39] Searching for header row...
-[2026-03-30 14:41:39] Found RECEIVED in row 3, cell: RECEIVED DATE
-[2026-03-30 14:41:39] Found ITEM_CODE in row 3, cell: SCM ITEM CODE
-[2026-03-30 14:41:39] No headers found, trying row 3 as default header row
-[2026-03-30 14:41:39] Default headers from row 3: {
-    "27": "received_date",
-    "28": "auto_tp_no",
-    "29": "manual_tp_no",
-    "30": "tp_date",
-    "31": "district",
-    "32": "scm_party_code",
-    "33": "party_name",
-    "34": "srno",
-    "35": "scm_item_code",
-    "36": "item_name",
-    "37": "size",
-    "38": "qty_cases",
-    "39": "qty_bottles",
-    "40": "batch_no",
-    "41": "mfg_month",
-    "42": "mrp",
-    "43": "bl",
-    "44": "vv_",
-    "45": "total_bot_qty",
-    "46": "transporter_name",
-    "47": "transporter_address",
-    "48": "route",
-    "49": "vehicle_no",
-    "50": "driver_name",
-    "51": "driver_mob_no",
-    "52": "driver_lic_no",
-    "53": "driver_city",
-    "54": "08apr2021",
-    "55": "fl130507042134",
-    "56": "49",
-    "57": "07apr2021",
-    "58": "kolhapur",
-    "59": "scm15180032249",
-    "60": "amar_traders",
-    "61": "1",
-    "62": "scmwn0019724",
-    "63": "sula_port_wine_1000",
-    "64": "375_ml",
-    "65": "1",
-    "66": "12",
-    "67": "dd024",
-    "68": "jan2021",
-    "69": "148",
-    "70": "135",
-    "71": "13",
-    "72": "36",
-    "75": "wia_sagli",
-    "76": "mh12lt0193",
-    "81": "08apr2021",
-    "82": "fl16808042118",
-    "83": "18",
-    "84": "08apr2021",
-    "85": "kolhapur",
-    "86": "scm15180009803",
-    "87": "sai_traders",
-    "88": "1",
-    "89": "scmpl0010198",
-    "90": "master_noi_dr_brandy",
-    "91": "180_ml",
-    "92": "5",
-    "94": "209",
-    "95": "feb2021",
-    "96": "104",
-    "97": "432",
-    "98": "25",
-    "99": "240",
-    "100": "sachin_gavade",
-    "101": "pulachi_shiroli",
-    "102": "sangli",
-    "103": "mh12lt0193",
-    "104": "sachin_gavade",
-    "105": "8421863969",
-    "106": "mh09_20100020816",
-    "107": "shiroli_pulachi",
-    "108": "08apr2021",
-    "109": "fl16808042118",
-    "110": "18",
-    "111": "08apr2021",
-    "112": "kolhapur",
-    "113": "scm15180009803",
-    "114": "sai_traders",
-    "115": "2",
-    "116": "scmpl0012496",
-    "117": "jambo_p_whisky350",
-    "118": "180_ml",
-    "119": "30",
-    "121": "216",
-    "122": "mar2021",
-    "123": "92",
-    "124": "25919999999999999",
-    "125": "35",
-    "126": "1440",
-    "127": "sachin_gavade",
-    "128": "pulachi_shiroli",
-    "129": "sangli",
-    "130": "mh12lt0193",
-    "131": "sachin_gavade",
-    "132": "8421863969",
-    "133": "mh09_20100020816",
-    "134": "shiroli_pulachi",
-    "135": "08apr2021",
-    "136": "fl170080421218",
-    "137": "240",
-    "138": "08apr2021",
-    "139": "kolhapur",
-    "140": "scm15180009805",
-    "141": "haresh_traders",
-    "142": "1",
-    "143": "scmpl0012597",
-    "144": "mcdowells_no1_celebration_xxx_matured_rum",
-    "145": "1000_mlpet",
-    "146": "2",
-    "148": "359",
-    "149": "mar2021",
-    "150": "660",
-    "151": "18",
-    "152": "25",
-    "153": "18",
-    "156": "sangali",
-    "157": "mh12lt0193",
-    "162": "08apr2021",
-    "163": "fl170080421218",
-    "164": "240",
-    "165": "08apr2021",
-    "166": "kolhapur",
-    "167": "scm15180009805",
-    "168": "haresh_traders",
-    "169": "2",
-    "170": "scmpl0010445",
-    "171": "directors_special_black_deluxe_whisky",
-    "172": "180_ml",
-    "173": "4",
-    "175": "990",
-    "176": "mar2021",
-    "177": "140",
-    "178": "3456",
-    "179": "25",
-    "180": "192",
-    "183": "sangali",
-    "184": "mh12lt0193",
-    "189": "08apr2021",
-    "190": "fl170080421218",
-    "191": "240",
-    "192": "08apr2021",
-    "193": "kolhapur",
-    "194": "scm15180009805",
-    "195": "haresh_traders",
-    "196": "3",
-    "197": "scmpl0010612",
-    "198": "directors_special_black_deluxe_whisky",
-    "199": "90_ml_pet100",
-    "200": "1",
-    "202": "990",
-    "203": "mar2021",
-    "204": "75",
-    "205": "9",
-    "206": "25",
-    "207": "100",
-    "210": "sangali",
-    "211": "mh12lt0193",
-    "216": "08apr2021",
-    "217": "fl170080421218",
-    "218": "240",
-    "219": "08apr2021",
-    "220": "kolhapur",
-    "221": "scm15180009805",
-    "222": "haresh_traders",
-    "223": "4",
-    "224": "scmpl0010451",
-    "225": "mcdowells_no_1_original_reserve_whisky",
-    "226": "180_ml",
-    "227": "50",
-    "229": "1073",
-    "230": "mar2021",
-    "231": "150",
-    "232": "432",
-    "233": "25",
-    "234": "2400",
-    "237": "sangali",
-    "238": "mh12lt0193",
-    "243": "08apr2021",
-    "244": "fl177080421151",
-    "245": "161",
-    "246": "08apr2021",
-    "247": "kolhapur",
-    "248": "scm15180009812",
-    "249": "rocky_traders",
-    "250": "1",
-    "251": "scmpl0010676",
-    "252": "brihans_goa_dry_gin__lime",
-    "253": "375_ml",
-    "254": "2",
-    "256": "607",
-    "257": "dec2020",
-    "258": "188",
-    "259": "18",
-    "260": "25",
-    "261": "48",
-    "262": "hari",
-    "263": "gandhinagar",
-    "264": "sangli",
-    "265": "mh09em5199",
-    "266": "santosh_rananavre",
-    "267": "8208595736",
-    "268": "1",
-    "269": "shiroli",
-    "270": "08apr2021",
-    "271": "fl177080421151",
-    "272": "161",
-    "273": "08apr2021",
-    "274": "kolhapur",
-    "275": "scm15180009812",
-    "276": "rocky_traders",
-    "277": "2",
-    "278": "scmpl0010679",
-    "279": "brihans_goa_dry_gin__lime_duet",
-    "280": "180_ml",
-    "281": "7",
-    "283": "888",
-    "284": "mar2021",
-    "285": "92",
-    "286": "6048",
-    "287": "35",
-    "288": "336",
-    "289": "hari",
-    "290": "gandhinagar",
-    "291": "sangli",
-    "292": "mh09em5199",
-    "293": "santosh_rananavre",
-    "294": "8208595736",
-    "295": "1",
-    "296": "shiroli",
-    "297": "08apr2021",
-    "298": "fl1770804214801",
-    "299": "161",
-    "300": "08apr2021",
-    "301": "kolhapur",
-    "302": "scm15180009812",
-    "303": "rocky_traders",
-    "304": "1",
-    "305": "scmpl0010678",
-    "306": "brihans_goa_dry_gin__lime_duet",
-    "307": "90_ml100",
-    "308": "2",
-    "310": "915",
-    "311": "mar2021",
-    "312": "50",
-    "313": "18",
-    "314": "371",
-    "315": "200"
+[2026-03-31 05:58:48] Number of files uploaded: 1
+[2026-03-31 05:58:48] Processing file: TPDetails.xls
+[2026-03-31 05:58:48] Processing file: TPDetails.xls
+[2026-03-31 05:58:48] File identified as HTML format - using HTML parser
+[2026-03-31 05:58:48] ===== PROCESSING HTML TABLE FILE =====: TPDetails.xls
+[2026-03-31 05:58:48] File content preview: <table  border='1' bgColor='#ffffff' borderColor='#000000' cellSpacing='0' cellPadding='0' style='font-size:10.0pt; font-family:Calibri; background:white;'  ><tr><td colspan='27' align='left'>Licensee: HOTEL GARVA (492)</td></tr><tr><td colspan='27' align='left'>TP Details</td></tr></tr><td>Received Date</td><td>Auto TP No</td><td>Manual TP No</td><td>TP Date</td><td>District</td><td>SCM Party Code</td><td>Party Name</td><td>SrNo</td><td>SCM Item Code</td><td>Item Name</td><td>Size</td><td>Qty (
+[2026-03-31 05:58:48] Extracted 0 rows from HTML tables
+[2026-03-31 05:58:48] Few rows found, trying alternative parsing...
+[2026-03-31 05:58:48] === FIRST 10 EXTRACTED ROWS ===
+[2026-03-31 05:58:48] ==============================
+[2026-03-31 06:12:59] === IMPORT PURCHASE STARTED ===
+[2026-03-31 06:12:59] Company ID from session: 5
+[2026-03-31 06:12:59] Database connection included
+[2026-03-31 06:12:59] License functions included
+[2026-03-31 06:12:59] License type: FL-III
+[2026-03-31 06:12:59] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    }
+]
+[2026-03-31 06:12:59] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R"
+]
+[2026-03-31 06:12:59] === FORM SUBMISSION STARTED ===
+[2026-03-31 06:12:59] Import settings: {
+    "importMode": "ALL",
+    "defaultStatus": "T",
+    "updateMRP": true,
+    "updateStockFlag": true
 }
-[2026-03-30 14:41:39] Processing data rows from row 4
-[2026-03-30 14:41:39] Processing complete: Processed 0 data rows, 0 rows had TP numbers, found 0 TP groups
-[2026-03-30 14:41:39] No valid TP data found in Excel. Processed 0 rows but found no TP numbers. Check that your Excel has columns: RECEIVED_DATE, TP_NO (or AUTO_TP_NO), and SCM_ITEM_CODE. Headers found: ["received_date","auto_tp_no","manual_tp_no","tp_date","district","scm_party_code","party_name","srno","scm_item_code","item_name","size","qty_cases","qty_bottles","batch_no","mfg_month","mrp","bl","vv_","total_bot_qty","transporter_name","transporter_address","route","vehicle_no","driver_name","driver_mob_no","driver_lic_no","driver_city","08apr2021","fl130507042134","49","07apr2021","kolhapur","scm15180032249","amar_traders","1","scmwn0019724","sula_port_wine_1000","375_ml","1","12","dd024","jan2021","148","135","13","36","wia_sagli","mh12lt0193","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","1","scmpl0010198","master_noi_dr_brandy","180_ml","5","209","feb2021","104","432","25","240","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl16808042118","18","08apr2021","kolhapur","scm15180009803","sai_traders","2","scmpl0012496","jambo_p_whisky350","180_ml","30","216","mar2021","92","25919999999999999","35","1440","sachin_gavade","pulachi_shiroli","sangli","mh12lt0193","sachin_gavade","8421863969","mh09_20100020816","shiroli_pulachi","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","1","scmpl0012597","mcdowells_no1_celebration_xxx_matured_rum","1000_mlpet","2","359","mar2021","660","18","25","18","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","2","scmpl0010445","directors_special_black_deluxe_whisky","180_ml","4","990","mar2021","140","3456","25","192","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","3","scmpl0010612","directors_special_black_deluxe_whisky","90_ml_pet100","1","990","mar2021","75","9","25","100","sangali","mh12lt0193","08apr2021","fl170080421218","240","08apr2021","kolhapur","scm15180009805","haresh_traders","4","scmpl0010451","mcdowells_no_1_original_reserve_whisky","180_ml","50","1073","mar2021","150","432","25","2400","sangali","mh12lt0193","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010676","brihans_goa_dry_gin__lime","375_ml","2","607","dec2020","188","18","25","48","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl177080421151","161","08apr2021","kolhapur","scm15180009812","rocky_traders","2","scmpl0010679","brihans_goa_dry_gin__lime_duet","180_ml","7","888","mar2021","92","6048","35","336","hari","gandhinagar","sangli","mh09em5199","santosh_rananavre","8208595736","1","shiroli","08apr2021","fl1770804214801","161","08apr2021","kolhapur","scm15180009812","rocky_traders","1","scmpl0010678","brihans_goa_dry_gin__lime_duet","90_ml100","2","915","mar2021","50","18","371","200"]
-[2026-03-30 14:41:39] === IMPORT PURCHASE ENDED ===
+[2026-03-31 06:12:59] Number of files uploaded: 1
+[2026-03-31 06:12:59] Processing file: TPDetails  11 aug.xls
+[2026-03-31 06:12:59] Processing file: TPDetails  11 aug.xls
+[2026-03-31 06:12:59] File identified as HTML format - using HTML parser
+[2026-03-31 06:12:59] ===== PROCESSING HTML TABLE FILE =====: TPDetails  11 aug.xls
+[2026-03-31 06:12:59] Found 2 raw table rows
+[2026-03-31 06:12:59] Extracted 0 data rows

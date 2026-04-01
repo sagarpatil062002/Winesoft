@@ -219,56 +219,237 @@ function createNewFinancialYear($conn, $previousFY = null, $startDate = null, $e
     }
 }
 
-// Get the current financial year
-$currentFY = checkAndCreateFinancialYear($conn);
-
-// Update session with current financial year data
-// IMPORTANT: Only set session if not already set from login
-// This preserves the financial year the user selected during login
-if ($currentFY) {
-    // Ensure FIN_YEAR_NAME is set
-    if (!isset($currentFY['FIN_YEAR_NAME'])) {
-        $startYear = date('Y', strtotime($currentFY['START_DATE']));
-        $endYear = date('y', strtotime($currentFY['END_DATE']));
-        $currentFY['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+/**
+ * Check if financial year has changed and activate the new one
+ * This should be called during month transition when moving to April
+ * 
+ * @param mysqli $conn Database connection
+ * @param string $newMonth The new month being transitioned to (format: Y-m)
+ * @param int $companyId Company ID
+ * @return array Result with status and message
+ */
+function checkAndActivateFinancialYear($conn, $newMonth, $companyId) {
+    $newMonthDate = new DateTime($newMonth . '-01');
+    $newMonthYear = (int)$newMonthDate->format('Y');
+    $newMonthNumber = (int)$newMonthDate->format('m');
+    
+    // Check if we're moving into April (financial year start)
+    if ($newMonthNumber != 4) {
+        error_log("Not April, no financial year change needed for month: {$newMonth}");
+        return [
+            'changed' => false,
+            'message' => 'Not a financial year transition month',
+            'new_financial_year' => null
+        ];
     }
     
-    // CRITICAL FIX: Only set session if no valid financial year was selected during login
-    // This preserves the user's selected year - do NOT overwrite with current system year!
-    if (!isset($_SESSION['FIN_YEAR_ID']) || $_SESSION['FIN_YEAR_ID'] == 0) {
-        // First time login - use current system FY
-        $_SESSION['FIN_YEAR_ID'] = $currentFY['ID'];
-        $_SESSION['FIN_YEAR_NAME'] = $currentFY['FIN_YEAR_NAME'];
-        $_SESSION['FIN_YEAR_START'] = $currentFY['START_DATE'];
-        $_SESSION['FIN_YEAR_END'] = $currentFY['END_DATE'];
+    // Calculate expected financial year based on new month
+    // April 2026 should start financial year 2026-2027
+    $expectedStartYear = $newMonthYear;
+    $expectedEndYear = $newMonthYear + 1;
+    $expectedStartDate = $expectedStartYear . '-04-01 00:00:00';
+    $expectedEndDate = $expectedEndYear . '-03-31 23:59:59';
+    $expectedFinYearName = $expectedStartYear . '-' . substr($expectedEndYear, -2);
+    
+    error_log("Checking financial year for April {$newMonthYear}: Expected {$expectedFinYearName}");
+    
+    // Check if this financial year exists in tblfinyear
+    $checkQuery = "SELECT * FROM tblfinyear WHERE START_DATE <= ? AND END_DATE >= ?";
+    $checkStmt = $conn->prepare($checkQuery);
+    if (!$checkStmt) {
+        error_log("Failed to prepare financial year check: " . $conn->error);
+        return ['changed' => false, 'error' => $conn->error];
     }
-    // If user already has a valid FY set from login, keep it - do NOT overwrite!
-} else {
-    // This should never happen, but just in case
-    error_log("CRITICAL: No financial year found or created!");
     
-    // Set default values based on current date
-    $currentMonth = date('m');
-    $currentYear = date('Y');
+    $checkDate = $expectedStartYear . '-04-01 00:00:00';
+    $checkStmt->bind_param("ss", $checkDate, $checkDate);
+    $checkStmt->execute();
+    $checkResult = $checkStmt->get_result();
     
-    if ($currentMonth >= 4) {
-        $fyStartYear = $currentYear;
-        $fyEndYear = $currentYear + 1;
+    $newFinancialYear = null;
+    
+    if ($checkResult->num_rows > 0) {
+        $newFinancialYear = $checkResult->fetch_assoc();
+        error_log("Found financial year: ID={$newFinancialYear['ID']}, Active={$newFinancialYear['ACTIVE']}");
+        
+        // Check if this financial year is already active
+        if ($newFinancialYear['ACTIVE'] == 1) {
+            error_log("Financial year {$expectedFinYearName} is already active");
+            return [
+                'changed' => false,
+                'message' => 'Financial year already active',
+                'new_financial_year' => $newFinancialYear
+            ];
+        }
+        
+        // Deactivate all other financial years
+        $deactivateQuery = "UPDATE tblfinyear SET ACTIVE = 0";
+        if ($conn->query($deactivateQuery)) {
+            error_log("Deactivated all financial years");
+        } else {
+            error_log("Failed to deactivate financial years: " . $conn->error);
+        }
+        
+        // Activate the new financial year
+        $activateQuery = "UPDATE tblfinyear SET ACTIVE = 1 WHERE ID = ?";
+        $activateStmt = $conn->prepare($activateQuery);
+        if ($activateStmt) {
+            $activateStmt->bind_param("i", $newFinancialYear['ID']);
+            if ($activateStmt->execute()) {
+                error_log("Activated financial year ID={$newFinancialYear['ID']}");
+                
+                // Update company_finyear relationship
+                updateCompanyFinancialYear($conn, $companyId, $newFinancialYear['ID']);
+                
+                // Update session with new financial year
+                $_SESSION['FIN_YEAR_ID'] = $newFinancialYear['ID'];
+                $_SESSION['FIN_YEAR_NAME'] = $expectedFinYearName;
+                $_SESSION['FIN_YEAR_START'] = $newFinancialYear['START_DATE'];
+                $_SESSION['FIN_YEAR_END'] = $newFinancialYear['END_DATE'];
+                $_SESSION['fy_transition'] = true;
+                
+                $activateStmt->close();
+                
+                return [
+                    'changed' => true,
+                    'message' => "Financial year changed to {$expectedFinYearName}",
+                    'new_financial_year' => $newFinancialYear,
+                    'fin_year_name' => $expectedFinYearName
+                ];
+            }
+            $activateStmt->close();
+        }
     } else {
-        $fyStartYear = $currentYear - 1;
-        $fyEndYear = $currentYear;
+        // Financial year doesn't exist, create it
+        error_log("Financial year {$expectedFinYearName} not found, creating new one");
+        
+        $newFY = createNewFinancialYear($conn, null, $expectedStartDate, $expectedEndDate, $expectedFinYearName);
+        
+        if ($newFY) {
+            // Update company_finyear relationship
+            updateCompanyFinancialYear($conn, $companyId, $newFY['ID']);
+            
+            // Update session
+            $_SESSION['FIN_YEAR_ID'] = $newFY['ID'];
+            $_SESSION['FIN_YEAR_NAME'] = $expectedFinYearName;
+            $_SESSION['FIN_YEAR_START'] = $newFY['START_DATE'];
+            $_SESSION['FIN_YEAR_END'] = $newFY['END_DATE'];
+            $_SESSION['fy_transition'] = true;
+            
+            return [
+                'changed' => true,
+                'message' => "Created and activated financial year {$expectedFinYearName}",
+                'new_financial_year' => $newFY,
+                'fin_year_name' => $expectedFinYearName
+            ];
+        }
     }
     
-    $_SESSION['FIN_YEAR_ID'] = 0;
-    $_SESSION['FIN_YEAR_NAME'] = $fyStartYear . '-' . substr($fyEndYear, -2);
-    $_SESSION['FIN_YEAR_START'] = $fyStartYear . '-04-01 00:00:00';
-    $_SESSION['FIN_YEAR_END'] = $fyEndYear . '-03-31 23:59:59';
+    $checkStmt->close();
     
-    error_log("Set default financial year values: " . $_SESSION['FIN_YEAR_NAME']);
+    return [
+        'changed' => false,
+        'message' => 'No financial year change needed',
+        'new_financial_year' => null
+    ];
 }
 
-$company_id = $_SESSION['CompID'];
-$license_type = getCompanyLicenseType($company_id, $conn);
+/**
+ * Update company_finyear relationship
+ * 
+ * @param mysqli $conn Database connection
+ * @param int $companyId Company ID
+ * @param int $finYearId Financial year ID
+ */
+function updateCompanyFinancialYear($conn, $companyId, $finYearId) {
+    // Check if relationship already exists
+    $checkQuery = "SELECT id FROM tblcompany_finyear WHERE company_id = ? AND finyear_id = ?";
+    $checkStmt = $conn->prepare($checkQuery);
+    if ($checkStmt) {
+        $checkStmt->bind_param("ii", $companyId, $finYearId);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        
+        if ($checkResult->num_rows == 0) {
+            // Deactivate old relationships for this company
+            $deactivateQuery = "UPDATE tblcompany_finyear SET is_active = 0 WHERE company_id = ?";
+            $deactivateStmt = $conn->prepare($deactivateQuery);
+            if ($deactivateStmt) {
+                $deactivateStmt->bind_param("i", $companyId);
+                $deactivateStmt->execute();
+                $deactivateStmt->close();
+                error_log("Deactivated old company_finyear relationships for company {$companyId}");
+            }
+            
+            // Insert new relationship
+            $insertQuery = "INSERT INTO tblcompany_finyear (company_id, finyear_id, is_active) VALUES (?, ?, 1)";
+            $insertStmt = $conn->prepare($insertQuery);
+            if ($insertStmt) {
+                $insertStmt->bind_param("ii", $companyId, $finYearId);
+                $insertStmt->execute();
+                $insertStmt->close();
+                error_log("Created company_finyear relationship: company={$companyId}, finyear={$finYearId}");
+            }
+        } else {
+            // Update existing relationship to active
+            $updateQuery = "UPDATE tblcompany_finyear SET is_active = 1 WHERE company_id = ? AND finyear_id = ?";
+            $updateStmt = $conn->prepare($updateQuery);
+            if ($updateStmt) {
+                $updateStmt->bind_param("ii", $companyId, $finYearId);
+                $updateStmt->execute();
+                $updateStmt->close();
+                error_log("Activated existing company_finyear relationship: company={$companyId}, finyear={$finYearId}");
+            }
+        }
+        $checkStmt->close();
+    }
+}
+
+/**
+ * Get current financial year from session or database
+ */
+function getCurrentFinancialYear($conn, $companyId) {
+    // Check session first
+    if (isset($_SESSION['FIN_YEAR_ID']) && $_SESSION['FIN_YEAR_ID'] > 0) {
+        $query = "SELECT * FROM tblfinyear WHERE ID = ?";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("i", $_SESSION['FIN_YEAR_ID']);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            if ($row = $result->fetch_assoc()) {
+                $stmt->close();
+                return $row;
+            }
+            $stmt->close();
+        }
+    }
+    
+    // Check company_finyear relationship
+    $query = "SELECT f.* FROM tblfinyear f 
+              INNER JOIN tblcompany_finyear cf ON f.ID = cf.finyear_id 
+              WHERE cf.company_id = ? AND cf.is_active = 1 AND f.ACTIVE = 1";
+    $stmt = $conn->prepare($query);
+    if ($stmt) {
+        $stmt->bind_param("i", $companyId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($row = $result->fetch_assoc()) {
+            $stmt->close();
+            return $row;
+        }
+        $stmt->close();
+    }
+    
+    // Get active financial year
+    $query = "SELECT * FROM tblfinyear WHERE ACTIVE = 1";
+    $result = $conn->query($query);
+    if ($result && $result->num_rows > 0) {
+        return $result->fetch_assoc();
+    }
+    
+    return null;
+}
 
 // =============================================================================
 // MONTH TRANSITION FUNCTIONS - DYNAMIC FOR ANY MONTH
@@ -849,7 +1030,8 @@ function executeMonthTransition($conn) {
         'company_id' => $companyId,
         'table_name' => $tableName,
         'steps' => [],
-        'success' => true
+        'success' => true,
+        'financial_year_changes' => []  // Add this to track financial year changes
     ];
     
     try {
@@ -894,13 +1076,24 @@ function executeMonthTransition($conn) {
                 throw new Exception("Failed to create archive for {$currentProcessingMonth}: " . ($archiveResult['error'] ?? 'Unknown error'));
             }
             
-            // Step 3b: Ensure next month has correct columns
+            // Step 3b: Check if we're moving into April (financial year change)
+            // This is important - check before the transition
+            $nextMonthDateCheck = new DateTime($nextMonth . '-01');
+            $nextMonthNumber = (int)$nextMonthDateCheck->format('m');
+            if ($nextMonthNumber == 4) {
+                error_log("Transitioning into April {$nextMonth}, checking financial year change");
+                $fyResult = checkAndActivateFinancialYear($conn, $nextMonth, $companyId);
+                $results['financial_year_changes'][] = $fyResult;
+                error_log("Financial year check result: " . print_r($fyResult, true));
+            }
+            
+            // Step 3c: Ensure next month has correct columns
             $nextMonthColumnResult = ensureDayColumnsForMonth($conn, $tableName, $nextMonth);
             if (!$nextMonthColumnResult['success']) {
                 throw new Exception("Failed to ensure columns for {$nextMonth}");
             }
             
-            // Step 3c: Transform table from current to next month
+            // Step 3d: Transform table from current to next month
             $transformResult = transformTableForNewMonth($conn, $tableName, $currentProcessingMonth, $nextMonth);
             $transformResults[] = $transformResult;
             $results['steps']['transforms'] = $transformResults;
@@ -909,7 +1102,7 @@ function executeMonthTransition($conn) {
                 throw new Exception("Failed to transform from {$currentProcessingMonth} to {$nextMonth}: " . ($transformResult['error'] ?? 'Unknown error'));
             }
             
-            // Step 3d: Fill gaps in the new month (for days when system was off)
+            // Step 3e: Fill gaps in the new month (for days when system was off)
             error_log("Step 4: Filling gaps in month {$nextMonth}");
             $gapFillResult = fillStockGaps($conn, $tableName, $nextMonth);
             $results['steps']['gap_fill'] = $gapFillResult;
@@ -927,7 +1120,17 @@ function executeMonthTransition($conn) {
         }
         
         $results['success'] = true;
-        $results['message'] = "Successfully transitioned from {$checkResult['latest_month']} to {$currentMonth}";
+        
+        // Build success message with financial year info
+        $message = "Successfully transitioned from {$checkResult['latest_month']} to {$currentMonth}";
+        if (!empty($results['financial_year_changes'])) {
+            foreach ($results['financial_year_changes'] as $fyChange) {
+                if ($fyChange['changed']) {
+                    $message .= " | " . $fyChange['message'];
+                }
+            }
+        }
+        $results['message'] = $message;
         
     } catch (Exception $e) {
         error_log("Month transition failed: " . $e->getMessage());
@@ -936,42 +1139,6 @@ function executeMonthTransition($conn) {
     }
     
     return $results;
-}
-
-// =============================================================================
-// TRANSITION PROCESSING
-// =============================================================================
-
-$transitionResults = null;
-if (isset($_POST['execute_month_transition']) && $_POST['execute_month_transition'] === '1') {
-    error_log("Manual month transition started by user");
-    
-    try {
-        $transitionResults = executeMonthTransition($conn);
-        
-        if ($transitionResults['success']) {
-            $successMsg = "Month transition completed successfully! ";
-            if (isset($transitionResults['steps']['archives'])) {
-                foreach ($transitionResults['steps']['archives'] as $archive) {
-                    if ($archive['success']) {
-                        $successMsg .= " | Archive: " . $archive['archive_table'];
-                    }
-                }
-            }
-            $_SESSION['transition_message'] = $successMsg;
-            $_SESSION['message_type'] = 'success';
-        } else {
-            $_SESSION['transition_message'] = "Month transition failed: " . ($transitionResults['error'] ?? 'Unknown error');
-            $_SESSION['message_type'] = 'error';
-        }
-    } catch (Exception $e) {
-        error_log("Month transition exception: " . $e->getMessage());
-        $_SESSION['transition_message'] = "System error: " . $e->getMessage();
-        $_SESSION['message_type'] = 'error';
-    }
-    
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
 }
 
 /**
@@ -1051,6 +1218,127 @@ function fixDailyStockIdPreservation($conn, $sourceTable, $archiveMonth) {
     }
 }
 
+// =============================================================================
+// TRANSITION PROCESSING
+// =============================================================================
+
+$transitionResults = null;
+if (isset($_POST['execute_month_transition']) && $_POST['execute_month_transition'] === '1') {
+    error_log("Manual month transition started by user");
+    
+    try {
+        $transitionResults = executeMonthTransition($conn);
+        
+        if ($transitionResults['success']) {
+            $successMsg = "Month transition completed successfully! ";
+            if (isset($transitionResults['steps']['archives'])) {
+                foreach ($transitionResults['steps']['archives'] as $archive) {
+                    if ($archive['success']) {
+                        $successMsg .= " | Archive: " . $archive['archive_table'];
+                    }
+                }
+            }
+            if (!empty($transitionResults['financial_year_changes'])) {
+                foreach ($transitionResults['financial_year_changes'] as $fyChange) {
+                    if ($fyChange['changed']) {
+                        $successMsg .= " | " . $fyChange['message'];
+                    }
+                }
+            }
+            $_SESSION['transition_message'] = $successMsg;
+            $_SESSION['message_type'] = 'success';
+        } else {
+            $_SESSION['transition_message'] = "Month transition failed: " . ($transitionResults['error'] ?? 'Unknown error');
+            $_SESSION['message_type'] = 'error';
+        }
+    } catch (Exception $e) {
+        error_log("Month transition exception: " . $e->getMessage());
+        $_SESSION['transition_message'] = "System error: " . $e->getMessage();
+        $_SESSION['message_type'] = 'error';
+    }
+    
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// =============================================================================
+// INITIALIZATION - GET CURRENT FINANCIAL YEAR
+// =============================================================================
+
+$company_id = $_SESSION['CompID'];
+$license_type = getCompanyLicenseType($company_id, $conn);
+
+// Get the current financial year
+$currentFY = checkAndCreateFinancialYear($conn);
+
+// ADD THIS: Ensure financial year matches company relationship
+$financialYearFromDb = getCurrentFinancialYear($conn, $company_id);
+if ($financialYearFromDb && $financialYearFromDb['ID'] != ($_SESSION['FIN_YEAR_ID'] ?? 0)) {
+    error_log("Financial year mismatch detected. Session: " . ($_SESSION['FIN_YEAR_ID'] ?? 'none') . ", DB: {$financialYearFromDb['ID']}");
+    
+    // Update session with correct financial year
+    $_SESSION['FIN_YEAR_ID'] = $financialYearFromDb['ID'];
+    
+    // Calculate FIN_YEAR_NAME if not set
+    $startYear = date('Y', strtotime($financialYearFromDb['START_DATE']));
+    $endYear = date('y', strtotime($financialYearFromDb['END_DATE']));
+    $_SESSION['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+    $_SESSION['FIN_YEAR_START'] = $financialYearFromDb['START_DATE'];
+    $_SESSION['FIN_YEAR_END'] = $financialYearFromDb['END_DATE'];
+    
+    $_SESSION['fy_transition'] = true;
+    error_log("Updated session with correct financial year: {$_SESSION['FIN_YEAR_NAME']}");
+}
+
+// Update session with current financial year data
+// IMPORTANT: Only set session if not already set from login
+// This preserves the financial year the user selected during login
+if ($currentFY) {
+    // Ensure FIN_YEAR_NAME is set
+    if (!isset($currentFY['FIN_YEAR_NAME'])) {
+        $startYear = date('Y', strtotime($currentFY['START_DATE']));
+        $endYear = date('y', strtotime($currentFY['END_DATE']));
+        $currentFY['FIN_YEAR_NAME'] = $startYear . '-' . $endYear;
+    }
+    
+    // CRITICAL FIX: Only set session if no valid financial year was selected during login
+    // OR if there's a mismatch that we already fixed above
+    if ((!isset($_SESSION['FIN_YEAR_ID']) || $_SESSION['FIN_YEAR_ID'] == 0) && !$financialYearFromDb) {
+        // First time login - use current system FY
+        $_SESSION['FIN_YEAR_ID'] = $currentFY['ID'];
+        $_SESSION['FIN_YEAR_NAME'] = $currentFY['FIN_YEAR_NAME'];
+        $_SESSION['FIN_YEAR_START'] = $currentFY['START_DATE'];
+        $_SESSION['FIN_YEAR_END'] = $currentFY['END_DATE'];
+    }
+    // If user already has a valid FY set from login, keep it - do NOT overwrite!
+} else {
+    // This should never happen, but just in case
+    error_log("CRITICAL: No financial year found or created!");
+    
+    // Set default values based on current date
+    $currentMonth = date('m');
+    $currentYear = date('Y');
+    
+    if ($currentMonth >= 4) {
+        $fyStartYear = $currentYear;
+        $fyEndYear = $currentYear + 1;
+    } else {
+        $fyStartYear = $currentYear - 1;
+        $fyEndYear = $currentYear;
+    }
+    
+    $_SESSION['FIN_YEAR_ID'] = 0;
+    $_SESSION['FIN_YEAR_NAME'] = $fyStartYear . '-' . substr($fyEndYear, -2);
+    $_SESSION['FIN_YEAR_START'] = $fyStartYear . '-04-01 00:00:00';
+    $_SESSION['FIN_YEAR_END'] = $fyEndYear . '-03-31 23:59:59';
+    
+    error_log("Set default financial year values: " . $_SESSION['FIN_YEAR_NAME']);
+}
+
+// =============================================================================
+// AUTO TRANSITION CHECK
+// =============================================================================
+
 // Check if transition is needed
 $transitionInfo = checkMonthTransition($conn);
 
@@ -1073,7 +1361,15 @@ if ($transitionInfo['needs_transition']) {
         
         if ($autoResults['success']) {
             $_SESSION[$transitionKey] = true;
-            $_SESSION['transition_message'] = "Auto transition completed successfully!";
+            $message = "Auto transition completed successfully!";
+            if (!empty($autoResults['financial_year_changes'])) {
+                foreach ($autoResults['financial_year_changes'] as $fyChange) {
+                    if ($fyChange['changed']) {
+                        $message .= " " . $fyChange['message'];
+                    }
+                }
+            }
+            $_SESSION['transition_message'] = $message;
             $_SESSION['message_type'] = 'success';
             
             // FIX: After transition, fix the DailyStockID to match archive
@@ -1626,6 +1922,7 @@ $classes = $license_type ? getClassesWithCounts($conn, $license_type) : [];
                                 $monthName = $monthDate->format('F Y');
                                 $prevMonthDate = new DateTime($prevMonth . '-01');
                                 $prevMonthName = $prevMonthDate->format('F Y');
+                                $nextMonthNumber = (int)$monthDate->format('m');
                             ?>
                             <div class="step-item">
                                 <strong>Step <?php echo $index + 1; ?>: Transition <?php echo $prevMonthName; ?> → <?php echo $monthName; ?></strong>
@@ -1637,6 +1934,13 @@ $classes = $license_type ? getClassesWithCounts($conn, $license_type) : [];
                                     <small>• Set DAY_01_OPEN = Last day closing of <?php echo $prevMonth; ?></small>
                                     <br>
                                     <small>• Ensure <?php echo getDaysInMonth($missingMonth); ?> day columns exist</small>
+                                    <?php if($nextMonthNumber == 4): ?>
+                                        <br>
+                                        <small class="text-success">
+                                            <i class="fas fa-calendar-check"></i> 
+                                            <strong>Financial Year Change:</strong> This transition will activate the new financial year
+                                        </small>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <?php endforeach; ?>

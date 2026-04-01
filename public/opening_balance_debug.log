@@ -36538,3 +36538,7101 @@
     [has_more] => 
 )
 
+[2026-04-01 09:05:00] Script started
+[2026-04-01 09:05:00] Financial Year - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+    [fin_year_id] => 1
+)
+
+[2026-04-01 09:05:00] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+    [8] => O
+)
+
+[2026-04-01 09:05:00] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:05:00] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:05:00] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-01
+)
+
+[2026-04-01 09:05:00] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:05:00] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:05:01] No first batch date found, returning null
+[2026-04-01 09:05:01] First batch data result
+[2026-04-01 09:05:01] First batch data
+[2026-04-01 09:05:01] Script completed, rendering page
+[2026-04-01 09:05:01] Script started
+[2026-04-01 09:05:01] Financial Year - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+    [fin_year_id] => 1
+)
+
+[2026-04-01 09:05:01] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+    [8] => O
+)
+
+[2026-04-01 09:05:01] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:05:01] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:05:01] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-01
+)
+
+[2026-04-01 09:05:01] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:05:01] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:05:01] No first batch date found, returning null
+[2026-04-01 09:05:01] First batch data result
+[2026-04-01 09:05:01] First batch data
+[2026-04-01 09:05:01] AJAX get_items called - Array
+(
+    [page] => 1
+    [view] => with_stock
+    [mode] => F
+    [search] => 
+    [first_batch_data] => 
+)
+
+[2026-04-01 09:05:33] Script started
+[2026-04-01 09:05:34] Financial Year - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+    [fin_year_id] => 1
+)
+
+[2026-04-01 09:05:34] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+    [8] => O
+)
+
+[2026-04-01 09:05:34] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:05:34] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:05:34] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-01
+)
+
+[2026-04-01 09:05:34] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:05:34] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:05:34] No first batch date found, returning null
+[2026-04-01 09:05:34] First batch data result
+[2026-04-01 09:05:34] First batch data
+[2026-04-01 09:05:34] Import started - Array
+(
+    [file] => opening_balance_Garava 01042021l.xlsx
+)
+
+[2026-04-01 09:05:34] Processing Excel file - Array
+(
+    [name] => opening_balance_Garava 01042021l.xlsx
+    [ext] => xlsx
+)
+
+[2026-04-01 09:05:42] Excel file loaded, rows count: 73
+[2026-04-01 09:05:42] Excel data parsed - Array
+(
+    [rows] => 72
+)
+
+[2026-04-01 09:05:42] Loaded valid items - Array
+(
+    [count] => 18773
+)
+
+[2026-04-01 09:05:42] ========== IMPORT DEBUG START ==========
+[2026-04-01 09:05:42] File: - Array
+(
+    [name] => opening_balance_Garava 01042021l.xlsx
+    [size] => 13009
+    [is_excel] => 1
+)
+
+[2026-04-01 09:05:42] Start date for import: - Array
+(
+    [start_date] => 2025-04-01
+)
+
+[2026-04-01 09:05:42] Items data array loaded: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 09:05:42] Sample imported items: - Array
+(
+    [0] => Array
+        (
+            [code] => SCMPL0028274
+            [name] => 8 PM Special Whisky
+            [size] => 90 ML (Pet)-100
+            [balance] => 500
+        )
+
+    [1] => Array
+        (
+            [code] => SCMPL0028275
+            [name] => 8 PM Special Whisky
+            [size] => 180 ML
+            [balance] => 500
+        )
+
+    [2] => Array
+        (
+            [code] => SCMPL0028356
+            [name] => 8 PM Special Whisky
+            [size] => 375 ML
+            [balance] => 50
+        )
+
+    [3] => Array
+        (
+            [code] => SCMBR0021532
+            [name] => Amstel Super Premium Strong beer
+            [size] => 650 ML
+            [balance] => 300
+        )
+
+    [4] => Array
+        (
+            [code] => SCMPL0009668
+            [name] => Antiquity Blue Whisky
+            [size] => 180 ML
+            [balance] => 60
+        )
+
+)
+
+[2026-04-01 09:05:42] ========== DATABASE ITEMS ==========
+[2026-04-01 09:05:42] Valid items loaded from database: - Array
+(
+    [count] => 18773
+)
+
+[2026-04-01 09:05:42] Sample database items: - Array
+(
+    [SCMBR0009735] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+    [SCMBR0009735|Budweiser Premium King of Beer|330 ML] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+    [SCMBR0009735|Budweiser Premium King of Beer] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+    [Budweiser Premium King of Beer] => Array
+        (
+            [code] => SCMBR0027104
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => 
+            [size_desc] => 
+        )
+
+    [SCMBR0009735|BUDWEISER PREMIUM KING OF BEER] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+)
+
+[2026-04-01 09:05:42] ========== DAILY STOCK TABLE CHECK ==========
+[2026-04-01 09:05:42] Daily stock table exists: - Array
+(
+    [table] => tbldailystock_1
+    [exists] => 1
+)
+
+[2026-04-01 09:05:42] Existing items in daily stock for current month: - Array
+(
+    [month] => 2026-04
+    [count] => 0
+    [items] => Array
+        (
+        )
+
+)
+
+[2026-04-01 09:05:42] Excel import processed - Array
+(
+    [rows] => 72
+    [imported] => 72
+    [skipped] => 0
+)
+
+[2026-04-01 09:05:42] ========== IMPORTED ITEMS ==========
+[2026-04-01 09:05:42] Items imported to tblitem_stock: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 09:05:42] First 20 imported items: - Array
+(
+    [0] => Array
+        (
+            [code] => SCMPL0028274
+            [balance] => 500
+        )
+
+    [1] => Array
+        (
+            [code] => SCMPL0028275
+            [balance] => 500
+        )
+
+    [2] => Array
+        (
+            [code] => SCMPL0028356
+            [balance] => 50
+        )
+
+    [3] => Array
+        (
+            [code] => SCMBR0021532
+            [balance] => 300
+        )
+
+    [4] => Array
+        (
+            [code] => SCMPL0009668
+            [balance] => 60
+        )
+
+    [5] => Array
+        (
+            [code] => SCMPL0009688
+            [balance] => 50
+        )
+
+    [6] => Array
+        (
+            [code] => SCMPL0022277
+            [balance] => 500
+        )
+
+    [7] => Array
+        (
+            [code] => SCMPL0022280
+            [balance] => 32
+        )
+
+    [8] => Array
+        (
+            [code] => SCMPL0018737
+            [balance] => 500
+        )
+
+    [9] => Array
+        (
+            [code] => SCMKS0026878
+            [balance] => 50
+        )
+
+    [10] => Array
+        (
+            [code] => SCMPL0009775
+            [balance] => 500
+        )
+
+    [11] => Array
+        (
+            [code] => SCMPL0010676
+            [balance] => 30
+        )
+
+    [12] => Array
+        (
+            [code] => SCMPL0010677
+            [balance] => 10
+        )
+
+    [13] => Array
+        (
+            [code] => SCMPL0010678
+            [balance] => 1500
+        )
+
+    [14] => Array
+        (
+            [code] => SCMPL0010679
+            [balance] => 1000
+        )
+
+    [15] => Array
+        (
+            [code] => SCMKB0030479
+            [balance] => 300
+        )
+
+    [16] => Array
+        (
+            [code] => SCMKB0031391
+            [balance] => 500
+        )
+
+    [17] => Array
+        (
+            [code] => SCMBR0018142
+            [balance] => 300
+        )
+
+    [18] => Array
+        (
+            [code] => SCMBR0027089
+            [balance] => 300
+        )
+
+    [19] => Array
+        (
+            [code] => SCMBR0018132
+            [balance] => 121
+        )
+
+)
+
+[2026-04-01 09:05:42] ========== DAILY STOCK UPDATE ==========
+[2026-04-01 09:05:42] Items sent to daily stock update (balance > 0): - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 09:05:42] First 20 items for daily stock: - Array
+(
+    [SCMPL0028274] => 500
+    [SCMPL0028275] => 500
+    [SCMPL0028356] => 50
+    [SCMBR0021532] => 300
+    [SCMPL0009668] => 60
+    [SCMPL0009688] => 50
+    [SCMPL0022277] => 500
+    [SCMPL0022280] => 32
+    [SCMPL0018737] => 500
+    [SCMKS0026878] => 50
+    [SCMPL0009775] => 500
+    [SCMPL0010676] => 30
+    [SCMPL0010677] => 10
+    [SCMPL0010678] => 1500
+    [SCMPL0010679] => 1000
+    [SCMKB0030479] => 300
+    [SCMKB0031391] => 500
+    [SCMBR0018142] => 300
+    [SCMBR0027089] => 300
+    [SCMBR0018132] => 121
+)
+
+[2026-04-01 09:05:42] ========== CALLING UPDATE DAILY STOCK RANGE ==========
+[2026-04-01 09:05:42] Updating daily stock - Array
+(
+    [items] => 72
+    [start_date] => 2025-04-01
+)
+
+[2026-04-01 09:05:42] ========== UPDATE DAILY STOCK RANGE START ========== - Array
+(
+    [items_count] => 72
+    [start_date] => 2025-04-01
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [mode] => F
+)
+
+[2026-04-01 09:05:42] Date range for update - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+)
+
+[2026-04-01 09:05:42] All months to process - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:05:42] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_04_25
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Successfully created archive table tbldailystock_1_04_25
+[2026-04-01 09:05:43] Added columns to tbldailystock_1_04_25 - Array
+(
+    [columns] => 120
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:43] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-04
+)
+
+[2026-04-01 09:05:44] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_05_25
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Successfully created archive table tbldailystock_1_05_25
+[2026-04-01 09:05:44] Added columns to tbldailystock_1_05_25 - Array
+(
+    [columns] => 124
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:44] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-05
+)
+
+[2026-04-01 09:05:45] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_06_25
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Successfully created archive table tbldailystock_1_06_25
+[2026-04-01 09:05:45] Added columns to tbldailystock_1_06_25 - Array
+(
+    [columns] => 120
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:45] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:46] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-06
+)
+
+[2026-04-01 09:05:47] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_07_25
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Successfully created archive table tbldailystock_1_07_25
+[2026-04-01 09:05:47] Added columns to tbldailystock_1_07_25 - Array
+(
+    [columns] => 124
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:47] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-07
+)
+
+[2026-04-01 09:05:48] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_08_25
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Successfully created archive table tbldailystock_1_08_25
+[2026-04-01 09:05:48] Added columns to tbldailystock_1_08_25 - Array
+(
+    [columns] => 124
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:48] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-08
+)
+
+[2026-04-01 09:05:49] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_09_25
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:49] Successfully created archive table tbldailystock_1_09_25
+[2026-04-01 09:05:50] Added columns to tbldailystock_1_09_25 - Array
+(
+    [columns] => 120
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:50] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-09
+)
+
+[2026-04-01 09:05:51] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_10_25
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:51] Successfully created archive table tbldailystock_1_10_25
+[2026-04-01 09:05:51] Added columns to tbldailystock_1_10_25 - Array
+(
+    [columns] => 124
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:51] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:52] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-10
+)
+
+[2026-04-01 09:05:53] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_11_25
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Successfully created archive table tbldailystock_1_11_25
+[2026-04-01 09:05:53] Added columns to tbldailystock_1_11_25 - Array
+(
+    [columns] => 120
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:53] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-11
+)
+
+[2026-04-01 09:05:54] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_12_25
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Successfully created archive table tbldailystock_1_12_25
+[2026-04-01 09:05:54] Added columns to tbldailystock_1_12_25 - Array
+(
+    [columns] => 124
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:54] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2025-12
+)
+
+[2026-04-01 09:05:55] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_01_26
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Successfully created archive table tbldailystock_1_01_26
+[2026-04-01 09:05:55] Added columns to tbldailystock_1_01_26 - Array
+(
+    [columns] => 124
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:55] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:56] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2026-01
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:57] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2026-02
+)
+
+[2026-04-01 09:05:58] Creating fresh archive table - Array
+(
+    [table] => tbldailystock_1_03_26
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Successfully created archive table tbldailystock_1_03_26
+[2026-04-01 09:05:58] Added columns to tbldailystock_1_03_26 - Array
+(
+    [columns] => 124
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028274
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028275
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0028356
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0021532
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009668
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009688
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022277
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0022280
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018737
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026878
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009775
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010676
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010677
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010678
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010679
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMKB0031391
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018142
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0027089
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018132
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018158
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023258
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010445
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010447
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010612
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009770
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0018648
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0033624
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0012499
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:58] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011438
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011418
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010234
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018635
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMBR0009847
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029429
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMBR0029431
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010541
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010198
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010450
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010451
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010453
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010056
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0040482
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009894
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009899
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009902
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009903
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0011581
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009936
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0035367
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010434
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009942
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0036711
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010701
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010702
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010076
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010088
+    [month] => 2026-03
+)
+
+[2026-04-01 09:05:59] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010075
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010087
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010108
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029933
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0029928
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010360
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009968
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0009977
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMWN0019724
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMKS0018253
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMBR0037366
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMBR0023264
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMBR0018161
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMKS0026879
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:00] Inserting base record for - Array
+(
+    [item_code] => SCMPL0010020
+    [month] => 2026-03
+)
+
+[2026-04-01 09:06:11] Successfully updated daily stock with cascade through all months
+[2026-04-01 09:06:11] Completed updateDailyStockRange
+[2026-04-01 09:06:11] ========== UPDATE DAILY STOCK RANGE END ==========
+[2026-04-01 09:06:11] ========== DAILY STOCK AFTER UPDATE ==========
+[2026-04-01 09:06:11] Checking daily stock for months: - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:06:11] Sample from tbldailystock_1_04_25: - Array
+(
+    [count] => 5
+    [items] => Array
+        (
+            [0] => Array
+                (
+                    [ITEM_CODE] => SCMBR0009847
+                    [STK_MONTH] => 2025-04
+                )
+
+            [1] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018132
+                    [STK_MONTH] => 2025-04
+                )
+
+            [2] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018142
+                    [STK_MONTH] => 2025-04
+                )
+
+            [3] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018158
+                    [STK_MONTH] => 2025-04
+                )
+
+            [4] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018161
+                    [STK_MONTH] => 2025-04
+                )
+
+        )
+
+)
+
+[2026-04-01 09:06:11] Detailed data for item SCMBR0009847 in 2025-04: - Array
+(
+    [DAY_01_OPEN] => 500
+    [DAY_01_CLOSING] => 500
+    [DAY_02_OPEN] => 500
+    [DAY_02_CLOSING] => 500
+    [DAY_03_OPEN] => 500
+    [DAY_03_CLOSING] => 500
+    [DAY_04_OPEN] => 500
+    [DAY_04_CLOSING] => 500
+    [DAY_05_OPEN] => 500
+    [DAY_05_CLOSING] => 500
+    [DAY_06_OPEN] => 500
+    [DAY_06_CLOSING] => 500
+    [DAY_07_OPEN] => 500
+    [DAY_07_CLOSING] => 500
+    [DAY_08_OPEN] => 500
+    [DAY_08_CLOSING] => 500
+    [DAY_09_OPEN] => 500
+    [DAY_09_CLOSING] => 500
+    [DAY_10_OPEN] => 500
+    [DAY_10_CLOSING] => 500
+    [DAY_11_OPEN] => 500
+    [DAY_11_CLOSING] => 500
+    [DAY_12_OPEN] => 500
+    [DAY_12_CLOSING] => 500
+    [DAY_13_OPEN] => 500
+    [DAY_13_CLOSING] => 500
+    [DAY_14_OPEN] => 500
+    [DAY_14_CLOSING] => 500
+    [DAY_15_OPEN] => 500
+    [DAY_15_CLOSING] => 500
+    [DAY_16_OPEN] => 500
+    [DAY_16_CLOSING] => 500
+    [DAY_17_OPEN] => 500
+    [DAY_17_CLOSING] => 500
+    [DAY_18_OPEN] => 500
+    [DAY_18_CLOSING] => 500
+    [DAY_19_OPEN] => 500
+    [DAY_19_CLOSING] => 500
+    [DAY_20_OPEN] => 500
+    [DAY_20_CLOSING] => 500
+    [DAY_21_OPEN] => 500
+    [DAY_21_CLOSING] => 500
+    [DAY_22_OPEN] => 500
+    [DAY_22_CLOSING] => 500
+    [DAY_23_OPEN] => 500
+    [DAY_23_CLOSING] => 500
+    [DAY_24_OPEN] => 500
+    [DAY_24_CLOSING] => 500
+    [DAY_25_OPEN] => 500
+    [DAY_25_CLOSING] => 500
+    [DAY_26_OPEN] => 500
+    [DAY_26_CLOSING] => 500
+    [DAY_27_OPEN] => 500
+    [DAY_27_CLOSING] => 500
+    [DAY_28_OPEN] => 500
+    [DAY_28_CLOSING] => 500
+    [DAY_29_OPEN] => 500
+    [DAY_29_CLOSING] => 500
+    [DAY_30_OPEN] => 500
+    [DAY_30_CLOSING] => 500
+)
+
+[2026-04-01 09:06:11] Sample from tbldailystock_1_05_25: - Array
+(
+    [count] => 5
+    [items] => Array
+        (
+            [0] => Array
+                (
+                    [ITEM_CODE] => SCMBR0009847
+                    [STK_MONTH] => 2025-05
+                )
+
+            [1] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018132
+                    [STK_MONTH] => 2025-05
+                )
+
+            [2] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018142
+                    [STK_MONTH] => 2025-05
+                )
+
+            [3] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018158
+                    [STK_MONTH] => 2025-05
+                )
+
+            [4] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018161
+                    [STK_MONTH] => 2025-05
+                )
+
+        )
+
+)
+
+[2026-04-01 09:06:11] Detailed data for item SCMBR0009847 in 2025-05: - Array
+(
+    [DAY_01_OPEN] => 500
+    [DAY_01_CLOSING] => 500
+    [DAY_02_OPEN] => 500
+    [DAY_02_CLOSING] => 500
+    [DAY_03_OPEN] => 500
+    [DAY_03_CLOSING] => 500
+    [DAY_04_OPEN] => 500
+    [DAY_04_CLOSING] => 500
+    [DAY_05_OPEN] => 500
+    [DAY_05_CLOSING] => 500
+    [DAY_06_OPEN] => 500
+    [DAY_06_CLOSING] => 500
+    [DAY_07_OPEN] => 500
+    [DAY_07_CLOSING] => 500
+    [DAY_08_OPEN] => 500
+    [DAY_08_CLOSING] => 500
+    [DAY_09_OPEN] => 500
+    [DAY_09_CLOSING] => 500
+    [DAY_10_OPEN] => 500
+    [DAY_10_CLOSING] => 500
+    [DAY_11_OPEN] => 500
+    [DAY_11_CLOSING] => 500
+    [DAY_12_OPEN] => 500
+    [DAY_12_CLOSING] => 500
+    [DAY_13_OPEN] => 500
+    [DAY_13_CLOSING] => 500
+    [DAY_14_OPEN] => 500
+    [DAY_14_CLOSING] => 500
+    [DAY_15_OPEN] => 500
+    [DAY_15_CLOSING] => 500
+    [DAY_16_OPEN] => 500
+    [DAY_16_CLOSING] => 500
+    [DAY_17_OPEN] => 500
+    [DAY_17_CLOSING] => 500
+    [DAY_18_OPEN] => 500
+    [DAY_18_CLOSING] => 500
+    [DAY_19_OPEN] => 500
+    [DAY_19_CLOSING] => 500
+    [DAY_20_OPEN] => 500
+    [DAY_20_CLOSING] => 500
+    [DAY_21_OPEN] => 500
+    [DAY_21_CLOSING] => 500
+    [DAY_22_OPEN] => 500
+    [DAY_22_CLOSING] => 500
+    [DAY_23_OPEN] => 500
+    [DAY_23_CLOSING] => 500
+    [DAY_24_OPEN] => 500
+    [DAY_24_CLOSING] => 500
+    [DAY_25_OPEN] => 500
+    [DAY_25_CLOSING] => 500
+    [DAY_26_OPEN] => 500
+    [DAY_26_CLOSING] => 500
+    [DAY_27_OPEN] => 500
+    [DAY_27_CLOSING] => 500
+    [DAY_28_OPEN] => 500
+    [DAY_28_CLOSING] => 500
+    [DAY_29_OPEN] => 500
+    [DAY_29_CLOSING] => 500
+    [DAY_30_OPEN] => 500
+    [DAY_30_CLOSING] => 500
+    [DAY_31_OPEN] => 500
+    [DAY_31_CLOSING] => 500
+)
+
+[2026-04-01 09:06:11] Sample from tbldailystock_1_06_25: - Array
+(
+    [count] => 5
+    [items] => Array
+        (
+            [0] => Array
+                (
+                    [ITEM_CODE] => SCMBR0009847
+                    [STK_MONTH] => 2025-06
+                )
+
+            [1] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018132
+                    [STK_MONTH] => 2025-06
+                )
+
+            [2] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018142
+                    [STK_MONTH] => 2025-06
+                )
+
+            [3] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018158
+                    [STK_MONTH] => 2025-06
+                )
+
+            [4] => Array
+                (
+                    [ITEM_CODE] => SCMBR0018161
+                    [STK_MONTH] => 2025-06
+                )
+
+        )
+
+)
+
+[2026-04-01 09:06:11] Detailed data for item SCMBR0009847 in 2025-06: - Array
+(
+    [DAY_01_OPEN] => 500
+    [DAY_01_CLOSING] => 500
+    [DAY_02_OPEN] => 500
+    [DAY_02_CLOSING] => 500
+    [DAY_03_OPEN] => 500
+    [DAY_03_CLOSING] => 500
+    [DAY_04_OPEN] => 500
+    [DAY_04_CLOSING] => 500
+    [DAY_05_OPEN] => 500
+    [DAY_05_CLOSING] => 500
+    [DAY_06_OPEN] => 500
+    [DAY_06_CLOSING] => 500
+    [DAY_07_OPEN] => 500
+    [DAY_07_CLOSING] => 500
+    [DAY_08_OPEN] => 500
+    [DAY_08_CLOSING] => 500
+    [DAY_09_OPEN] => 500
+    [DAY_09_CLOSING] => 500
+    [DAY_10_OPEN] => 500
+    [DAY_10_CLOSING] => 500
+    [DAY_11_OPEN] => 500
+    [DAY_11_CLOSING] => 500
+    [DAY_12_OPEN] => 500
+    [DAY_12_CLOSING] => 500
+    [DAY_13_OPEN] => 500
+    [DAY_13_CLOSING] => 500
+    [DAY_14_OPEN] => 500
+    [DAY_14_CLOSING] => 500
+    [DAY_15_OPEN] => 500
+    [DAY_15_CLOSING] => 500
+    [DAY_16_OPEN] => 500
+    [DAY_16_CLOSING] => 500
+    [DAY_17_OPEN] => 500
+    [DAY_17_CLOSING] => 500
+    [DAY_18_OPEN] => 500
+    [DAY_18_CLOSING] => 500
+    [DAY_19_OPEN] => 500
+    [DAY_19_CLOSING] => 500
+    [DAY_20_OPEN] => 500
+    [DAY_20_CLOSING] => 500
+    [DAY_21_OPEN] => 500
+    [DAY_21_CLOSING] => 500
+    [DAY_22_OPEN] => 500
+    [DAY_22_CLOSING] => 500
+    [DAY_23_OPEN] => 500
+    [DAY_23_CLOSING] => 500
+    [DAY_24_OPEN] => 500
+    [DAY_24_CLOSING] => 500
+    [DAY_25_OPEN] => 500
+    [DAY_25_CLOSING] => 500
+    [DAY_26_OPEN] => 500
+    [DAY_26_CLOSING] => 500
+    [DAY_27_OPEN] => 500
+    [DAY_27_CLOSING] => 500
+    [DAY_28_OPEN] => 500
+    [DAY_28_CLOSING] => 500
+    [DAY_29_OPEN] => 500
+    [DAY_29_CLOSING] => 500
+    [DAY_30_OPEN] => 500
+    [DAY_30_CLOSING] => 500
+)
+
+[2026-04-01 09:06:11] Transaction committed
+[2026-04-01 09:06:11] ========== IMPORT COMPLETE - FINAL SUMMARY ==========
+[2026-04-01 09:06:11] Total rows processed: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 09:06:11] Total items imported to tblitem_stock: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 09:06:11] Total items skipped: - Array
+(
+    [count] => 0
+)
+
+[2026-04-01 09:06:11] Total items sent to daily stock update: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 09:06:11] Financial Year: - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+)
+
+[2026-04-01 09:06:11] Final count in tbldailystock_1: - Array
+(
+    [total_records] => 0
+)
+
+[2026-04-01 09:06:11] ========== DEBUG COMPLETE ==========
+[2026-04-01 09:06:12] Script started
+[2026-04-01 09:06:12] Financial Year - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+    [fin_year_id] => 1
+)
+
+[2026-04-01 09:06:12] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+    [8] => O
+)
+
+[2026-04-01 09:06:12] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:06:12] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-01
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:06:12] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:06:12] Found opening balance in month - Array
+(
+    [month] => 2025-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 09:06:12] Found first batch date - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+)
+
+[2026-04-01 09:06:12] First batch data result - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:06:12] First batch data - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2025-04-01
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2025-04
+        )
+
+)
+
+[2026-04-01 09:06:12] Initial counts (first batch) - Array
+(
+    [total] => 73
+    [with_stock] => 73
+)
+
+[2026-04-01 09:06:12] Script completed, rendering page
+[2026-04-01 09:06:12] Script started
+[2026-04-01 09:06:12] Financial Year - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+    [fin_year_id] => 1
+)
+
+[2026-04-01 09:06:12] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+    [8] => O
+)
+
+[2026-04-01 09:06:12] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:06:12] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-01
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:06:12] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:06:12] Found opening balance in month - Array
+(
+    [month] => 2025-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 09:06:12] Found first batch date - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+)
+
+[2026-04-01 09:06:12] First batch data result - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:06:12] First batch data - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:06:12] AJAX get_items called - Array
+(
+    [page] => 1
+    [view] => with_stock
+    [mode] => F
+    [search] => 
+    [first_batch_data] => Array
+        (
+            [date] => 2025-04-01
+            [month] => 2025-04
+            [day] => 01
+            [day_num] => 1
+        )
+
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2025-04-01
+)
+
+[2026-04-01 09:06:12] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2025-04
+        )
+
+)
+
+[2026-04-01 09:06:12] AJAX get_items count query result - Array
+(
+    [total] => 72
+    [batch_month] => 2025-04
+    [batch_day] => 01
+)
+
+[2026-04-01 09:06:12] AJAX get_items returning - Array
+(
+    [items_count] => 72
+    [total] => 72
+    [has_more] => 
+)
+
+[2026-04-01 09:08:01] Script started
+[2026-04-01 09:08:01] Financial Year - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+    [fin_year_id] => 1
+)
+
+[2026-04-01 09:08:01] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+    [8] => O
+)
+
+[2026-04-01 09:08:01] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:08:01] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:08:01] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-01
+)
+
+[2026-04-01 09:08:01] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:08:01] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:08:01] Found opening balance in month - Array
+(
+    [month] => 2025-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 09:08:01] Found first batch date - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+)
+
+[2026-04-01 09:08:01] First batch data result - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:08:01] First batch data - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:08:01] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2025-04-01
+)
+
+[2026-04-01 09:08:01] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2025-04
+        )
+
+)
+
+[2026-04-01 09:08:01] Initial counts (first batch) - Array
+(
+    [total] => 73
+    [with_stock] => 73
+)
+
+[2026-04-01 09:08:01] Script completed, rendering page
+[2026-04-01 09:08:02] Script started
+[2026-04-01 09:08:02] Financial Year - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-31
+    [fin_year_id] => 1
+)
+
+[2026-04-01 09:08:02] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+    [8] => O
+)
+
+[2026-04-01 09:08:02] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:08:02] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 1
+    [mode] => F
+    [fy_start] => 2025-04-01
+    [fy_end] => 2026-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+            [8] => O
+        )
+
+)
+
+[2026-04-01 09:08:02] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2026-03-01
+)
+
+[2026-04-01 09:08:02] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:08:02] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2025-04
+            [1] => 2025-05
+            [2] => 2025-06
+            [3] => 2025-07
+            [4] => 2025-08
+            [5] => 2025-09
+            [6] => 2025-10
+            [7] => 2025-11
+            [8] => 2025-12
+            [9] => 2026-01
+            [10] => 2026-02
+            [11] => 2026-03
+        )
+
+)
+
+[2026-04-01 09:08:02] Found opening balance in month - Array
+(
+    [month] => 2025-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 09:08:02] Found first batch date - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+)
+
+[2026-04-01 09:08:02] First batch data result - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:08:02] First batch data - Array
+(
+    [date] => 2025-04-01
+    [month] => 2025-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 09:08:02] AJAX get_items called - Array
+(
+    [page] => 1
+    [view] => with_stock
+    [mode] => F
+    [search] => 
+    [first_batch_data] => Array
+        (
+            [date] => 2025-04-01
+            [month] => 2025-04
+            [day] => 01
+            [day_num] => 1
+        )
+
+)
+
+[2026-04-01 09:08:02] generateMonthsInRange: Date range - Array
+(
+    [start] => 2025-04-01
+    [end] => 2025-04-01
+)
+
+[2026-04-01 09:08:02] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2025-04
+        )
+
+)
+
+[2026-04-01 09:08:02] AJAX get_items count query result - Array
+(
+    [total] => 72
+    [batch_month] => 2025-04
+    [batch_day] => 01
+)
+
+[2026-04-01 09:08:02] AJAX get_items returning - Array
+(
+    [items_count] => 72
+    [total] => 72
+    [has_more] => 
+)
+
