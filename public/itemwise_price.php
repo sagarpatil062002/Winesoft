@@ -16,6 +16,7 @@ $fin_year = $_SESSION['FIN_YEAR_ID'];
 
 include_once "../config/db.php"; // MySQLi connection in $conn
 require_once 'license_functions.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 // Get company's license type and available classes
 $license_type = getCompanyLicenseType($companyId, $conn);

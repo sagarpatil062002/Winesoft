@@ -664,10 +664,58 @@ foreach ($main_display_categories as $category) {
     }
 }
 
-// Calculate summary in liters for main categories (including MML)
+// ============================================
+// NEW: FILTER OUT CATEGORIES AND SIZES WITH NO DATA
+// ============================================
+
+// Function to check if a category has any data at all
+function hasCategoryData($category, $main_monthly_data, $size_columns) {
+    foreach ($size_columns[$category] as $size) {
+        $opening = $main_monthly_data['opening'][$category][$size] ?? 0;
+        $received = $main_monthly_data['received'][$category][$size] ?? 0;
+        $sold = $main_monthly_data['sold'][$category][$size] ?? 0;
+        $breakages = $main_monthly_data['breakages'][$category][$size] ?? 0;
+        $closing = $main_monthly_data['closing_calculated'][$category][$size] ?? 0;
+        
+        if ($opening > 0 || $received > 0 || $sold > 0 || $breakages > 0 || $closing > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Function to get sizes that have data for a specific category
+function getSizesWithData($category, $main_monthly_data, $size_columns) {
+    $sizes_with_data = [];
+    foreach ($size_columns[$category] as $size) {
+        $opening = $main_monthly_data['opening'][$category][$size] ?? 0;
+        $received = $main_monthly_data['received'][$category][$size] ?? 0;
+        $sold = $main_monthly_data['sold'][$category][$size] ?? 0;
+        $breakages = $main_monthly_data['breakages'][$category][$size] ?? 0;
+        $closing = $main_monthly_data['closing_calculated'][$category][$size] ?? 0;
+        
+        if ($opening > 0 || $received > 0 || $sold > 0 || $breakages > 0 || $closing > 0) {
+            $sizes_with_data[] = $size;
+        }
+    }
+    return $sizes_with_data;
+}
+
+// Filter categories - keep only those with data
+$filtered_categories = [];
+foreach ($main_display_categories as $category) {
+    if (hasCategoryData($category, $main_monthly_data, $size_columns)) {
+        $filtered_categories[] = $category;
+    }
+}
+
+// If no categories have data, show a message
+$has_any_data = !empty($filtered_categories);
+
+// Calculate summary in liters for filtered categories
 $summary_liters_main = [];
 
-foreach ($main_display_categories as $category) {
+foreach ($filtered_categories as $category) {
     $summary_liters_main[$category] = [
         'opening' => 0,
         'received' => 0,
@@ -676,7 +724,8 @@ foreach ($main_display_categories as $category) {
         'breakages' => 0
     ];
     
-    foreach ($size_columns[$category] as $size) {
+    $sizes_with_data = getSizesWithData($category, $main_monthly_data, $size_columns);
+    foreach ($sizes_with_data as $size) {
         $ml = extractMLFromSize($size);
         $liters_factor = $ml / 1000;
         
@@ -701,14 +750,14 @@ foreach ($main_display_categories as $category) {
 $years_with_months = [];
 foreach ($available_months as $avail_month) {
     $year = date('Y', strtotime($avail_month . '-01'));
-    $month_name = date('F', strtotime($avail_month . '-01'));
+    $month_name_dropdown = date('F', strtotime($avail_month . '-01'));
     
     if (!isset($years_with_months[$year])) {
         $years_with_months[$year] = [];
     }
     $years_with_months[$year][] = [
         'value' => $avail_month,
-        'name' => $month_name
+        'name' => $month_name_dropdown
     ];
 }
 
@@ -859,6 +908,12 @@ $closing_display_text = $is_current_month ?
     }
     .calculated-closing {
       font-weight: bold;
+    }
+    .no-data-message {
+      text-align: center;
+      padding: 50px;
+      font-size: 18px;
+      color: #666;
     }
 
     @media print {
@@ -1073,8 +1128,8 @@ $closing_display_text = $is_current_month ?
                       // Fallback: show all available months
                       foreach ($available_months as $avail_month) {
                           $selected = ($selected_month == $avail_month) ? 'selected' : '';
-                          $month_name = date('F Y', strtotime($avail_month . '-01'));
-                          echo "<option value=\"$avail_month\" $selected>$month_name</option>";
+                          $month_name_dropdown = date('F Y', strtotime($avail_month . '-01'));
+                          echo "<option value=\"$avail_month\" $selected>$month_name_dropdown</option>";
                       }
                   } else {
                       echo '<option value="">No months available</option>';
@@ -1112,26 +1167,29 @@ $closing_display_text = $is_current_month ?
           </h6>
           <h6>Closing Balance <?= $closing_display_text ?> (Calculated as Opening + Received - Sold - Breakages)</h6>
           <h6>License Type: <?= htmlspecialchars($license_type) ?></h6>
-          <h6><span class="badge bg-secondary">MML Categories Included: Spirit MML & Wine MML (Grey Highlighted)</span></h6>
+          <?php if (!empty($filtered_categories) && (in_array('MML', $filtered_categories) || in_array('WINE MML', $filtered_categories))): ?>
+            <h6><span class="badge bg-secondary">MML Categories Included: Spirit MML & Wine MML (Grey Highlighted)</span></h6>
+          <?php endif; ?>
         </div>
         
+        <?php if ($has_any_data): ?>
         <div class="table-responsive">
           <table class="report-table" id="flr-monthly-table">
             <thead>
               <tr>
                 <th rowspan="2" class="description-col">Description</th>
-                <?php foreach ($main_display_categories as $category): ?>
-                  <th colspan="<?= count($size_columns[$category]) ?>" class="category-header <?= in_array($category, ['MML', 'WINE MML']) ? 'mml-highlight' : '' ?>"><?= $category_display_names[$category] ?></th>
+                <?php foreach ($filtered_categories as $category): ?>
+                  <th colspan="<?= count(getSizesWithData($category, $main_monthly_data, $size_columns)) ?>" class="category-header <?= in_array($category, ['MML', 'WINE MML']) ? 'mml-highlight' : '' ?>"><?= $category_display_names[$category] ?></th>
                 <?php endforeach; ?>
               </tr>
               <tr>
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                <?php foreach ($filtered_categories as $cat_index => $category): ?>
                   <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
+                  $sizes_with_data = getSizesWithData($category, $main_monthly_data, $size_columns);
+                  $last_index = count($sizes_with_data) - 1;
+                  foreach ($sizes_with_data as $size_index => $size): 
                   ?>
-                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?> <?= in_array($category, ['MML', 'WINE MML']) ? 'mml-highlight' : '' ?>"><?= $size ?></th>
+                    <th class="size-col vertical-text <?= ($size_index == $last_index && $cat_index < count($filtered_categories) - 1) ? 'double-line-right' : '' ?> <?= in_array($category, ['MML', 'WINE MML']) ? 'mml-highlight' : '' ?>"><?= $size ?></th>
                   <?php endforeach; ?>
                 <?php endforeach; ?>
               </tr>
@@ -1141,13 +1199,13 @@ $closing_display_text = $is_current_month ?
               <tr>
                 <td class="description-col">Opening Balance of the Beginning of the Month (<?= date('d-M-Y', strtotime($first_date)) ?>) : -</td>
                 
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                <?php foreach ($filtered_categories as $cat_index => $category): ?>
                   <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
+                  $sizes_with_data = getSizesWithData($category, $main_monthly_data, $size_columns);
+                  $last_index = count($sizes_with_data) - 1;
+                  foreach ($sizes_with_data as $size_index => $size): 
                   ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($filtered_categories) - 1) ? 'double-line-right' : '' ?>">
                       <?= isset($main_monthly_data['opening'][$category][$size]) && $main_monthly_data['opening'][$category][$size] > 0 ? $main_monthly_data['opening'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
@@ -1158,13 +1216,13 @@ $closing_display_text = $is_current_month ?
               <tr>
                 <td class="description-col">Received during the Current Month : -</td>
                 
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                <?php foreach ($filtered_categories as $cat_index => $category): ?>
                   <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
+                  $sizes_with_data = getSizesWithData($category, $main_monthly_data, $size_columns);
+                  $last_index = count($sizes_with_data) - 1;
+                  foreach ($sizes_with_data as $size_index => $size): 
                   ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($filtered_categories) - 1) ? 'double-line-right' : '' ?>">
                       <?= isset($main_monthly_data['received'][$category][$size]) && $main_monthly_data['received'][$category][$size] > 0 ? $main_monthly_data['received'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
@@ -1175,13 +1233,13 @@ $closing_display_text = $is_current_month ?
               <tr>
                 <td class="description-col">Sold during the Current Month : -</td>
                 
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                <?php foreach ($filtered_categories as $cat_index => $category): ?>
                   <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
+                  $sizes_with_data = getSizesWithData($category, $main_monthly_data, $size_columns);
+                  $last_index = count($sizes_with_data) - 1;
+                  foreach ($sizes_with_data as $size_index => $size): 
                   ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($filtered_categories) - 1) ? 'double-line-right' : '' ?>">
                       <?= isset($main_monthly_data['sold'][$category][$size]) && $main_monthly_data['sold'][$category][$size] > 0 ? $main_monthly_data['sold'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
@@ -1192,13 +1250,13 @@ $closing_display_text = $is_current_month ?
               <tr>
                 <td class="description-col">Breakages during the Current Month : -</td>
                 
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                <?php foreach ($filtered_categories as $cat_index => $category): ?>
                   <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
+                  $sizes_with_data = getSizesWithData($category, $main_monthly_data, $size_columns);
+                  $last_index = count($sizes_with_data) - 1;
+                  foreach ($sizes_with_data as $size_index => $size): 
                   ?>
-                    <td class="<?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                    <td class="<?= ($size_index == $last_index && $cat_index < count($filtered_categories) - 1) ? 'double-line-right' : '' ?>">
                       <?= isset($main_monthly_data['breakages'][$category][$size]) && $main_monthly_data['breakages'][$category][$size] > 0 ? $main_monthly_data['breakages'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
@@ -1209,13 +1267,13 @@ $closing_display_text = $is_current_month ?
               <tr class="summary-row">
                 <td class="description-col">Closing Balance at the End of the Month <?= $closing_display_text ?> : -</td>
                 
-                <?php foreach ($main_display_categories as $cat_index => $category): ?>
+                <?php foreach ($filtered_categories as $cat_index => $category): ?>
                   <?php 
-                  $sizes = $size_columns[$category];
-                  $last_index = count($sizes) - 1;
-                  foreach ($sizes as $size_index => $size): 
+                  $sizes_with_data = getSizesWithData($category, $main_monthly_data, $size_columns);
+                  $last_index = count($sizes_with_data) - 1;
+                  foreach ($sizes_with_data as $size_index => $size): 
                   ?>
-                    <td class="calculated-closing <?= ($size_index == $last_index && $cat_index < count($main_display_categories) - 1) ? 'double-line-right' : '' ?>">
+                    <td class="calculated-closing <?= ($size_index == $last_index && $cat_index < count($filtered_categories) - 1) ? 'double-line-right' : '' ?>">
                       <?= isset($main_monthly_data['closing_calculated'][$category][$size]) && $main_monthly_data['closing_calculated'][$category][$size] > 0 ? $main_monthly_data['closing_calculated'][$category][$size] : '' ?>
                     </td>
                   <?php endforeach; ?>
@@ -1227,13 +1285,14 @@ $closing_display_text = $is_current_month ?
         </div>
 
         <!-- Summary in Liters Table (WITH MML Included) -->
+        <?php if (!empty($filtered_categories)): ?>
         <div class="summary-table">
           <h5 class="text-center mb-3">MONTHLY SUMMARY (IN LITERS) - ALL CATEGORIES INCLUDING MML</h5>
           <table class="report-table">
             <thead>
               <tr>
                 <th>Description</th>
-                <?php foreach ($main_display_categories as $category): ?>
+                <?php foreach ($filtered_categories as $category): ?>
                   <th <?= in_array($category, ['MML', 'WINE MML']) ? 'class="mml-highlight"' : '' ?>><?= $category_display_names[$category] ?></th>
                 <?php endforeach; ?>
               </tr>
@@ -1241,42 +1300,60 @@ $closing_display_text = $is_current_month ?
             <tbody>
               <tr>
                 <td class="text-start fw-bold">Op. Stk. (Ltrs.)</td>
-                <?php foreach ($main_display_categories as $category): ?>
+                <?php foreach ($filtered_categories as $category): ?>
                   <td><?= number_format($summary_liters_main[$category]['opening'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
               </tr>
               <tr>
                 <td class="text-start fw-bold">Receipts (Ltrs.)</td>
-                <?php foreach ($main_display_categories as $category): ?>
+                <?php foreach ($filtered_categories as $category): ?>
                   <td><?= number_format($summary_liters_main[$category]['received'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
               </tr>
               <tr>
                 <td class="text-start fw-bold">Sold (Ltrs.)</td>
-                <?php foreach ($main_display_categories as $category): ?>
+                <?php foreach ($filtered_categories as $category): ?>
                   <td><?= number_format($summary_liters_main[$category]['sold'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
               </tr>
               <tr>
                 <td class="text-start fw-bold">Breakages (Ltrs.)</td>
-                <?php foreach ($main_display_categories as $category): ?>
+                <?php foreach ($filtered_categories as $category): ?>
                   <td><?= number_format($summary_liters_main[$category]['breakages'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
               </tr>
               <tr class="summary-row">
                 <td class="text-start fw-bold">Cl. Stk. (Ltrs.)</td>
-                <?php foreach ($main_display_categories as $category): ?>
+                <?php foreach ($filtered_categories as $category): ?>
                   <td><?= number_format($summary_liters_main[$category]['closing'] ?? 0, 2) ?></td>
                 <?php endforeach; ?>
               </tr>
             </tbody>
           </table>
         </div>
+        <?php endif; ?>
+        
+        <?php else: ?>
+        <div class="no-data-message">
+          <i class="fas fa-info-circle fa-3x mb-3"></i>
+          <p>No data available for the selected month: <?= $month_name ?></p>
+          <p>Please select a different month or ensure there are transactions recorded for this period.</p>
+        </div>
+        <?php endif; ?>
         
         <div class="footer-info">
           <p>Note: This is a computer generated monthly report. Closing balance is calculated as Opening + Received - Sold - Breakages.</p>
           <p><?= $is_current_month ? 'Current month data is partial and subject to change. ' : '' ?></p>
-          <p><strong>MML Summary:</strong> Spirit MML Total: <?= array_sum($main_monthly_data['received']['MML'] ?? []) + array_sum($main_monthly_data['sold']['MML'] ?? []) + array_sum($main_monthly_data['breakages']['MML'] ?? []) + array_sum($main_monthly_data['closing_calculated']['MML'] ?? []) ?> bottles | Wine MML Total: <?= array_sum($main_monthly_data['received']['WINE MML'] ?? []) + array_sum($main_monthly_data['sold']['WINE MML'] ?? []) + array_sum($main_monthly_data['breakages']['WINE MML'] ?? []) + array_sum($main_monthly_data['closing_calculated']['WINE MML'] ?? []) ?> bottles</p>
+          <?php if ($has_any_data): ?>
+          <p><strong>MML Summary:</strong> 
+            <?php if (in_array('MML', $filtered_categories)): ?>
+            Spirit MML Total: <?= array_sum($main_monthly_data['received']['MML'] ?? []) + array_sum($main_monthly_data['sold']['MML'] ?? []) + array_sum($main_monthly_data['breakages']['MML'] ?? []) + array_sum($main_monthly_data['closing_calculated']['MML'] ?? []) ?> bottles 
+            <?php endif; ?>
+            <?php if (in_array('WINE MML', $filtered_categories)): ?>
+            | Wine MML Total: <?= array_sum($main_monthly_data['received']['WINE MML'] ?? []) + array_sum($main_monthly_data['sold']['WINE MML'] ?? []) + array_sum($main_monthly_data['breakages']['WINE MML'] ?? []) + array_sum($main_monthly_data['closing_calculated']['WINE MML'] ?? []) ?> bottles
+            <?php endif; ?>
+          </p>
+          <?php endif; ?>
           <p>Generated on: <?= date('d-M-Y h:i A') ?> | Month: <?= $month_name ?></p>
         </div>
       </div>

@@ -598,31 +598,13 @@ function getSortLink($column, $label) {
     margin-bottom: 0;
   }
   
-  /* File drop zone styles */
-  .file-drop-zone {
-    border: 2px dashed #6c757d;
-    border-radius: 8px;
-    padding: 30px;
-    text-align: center;
-    background-color: #f8f9fa;
-    transition: all 0.3s ease;
+  /* File input styles */
+  .file-input-wrapper {
+    margin-bottom: 15px;
+  }
+  
+  .file-input-wrapper .form-control {
     cursor: pointer;
-  }
-  
-  .file-drop-zone:hover,
-  .file-drop-zone.dragover {
-    border-color: #0d6efd;
-    background-color: #e7f1ff;
-  }
-  
-  .file-drop-zone input[type="file"] {
-    display: none;
-  }
-  
-  .drop-zone-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
   }
   
   /* Bulk delete selection styles */
@@ -808,7 +790,7 @@ function getSortLink($column, $label) {
                       <input class="form-check-input purchase-checkbox" type="checkbox" 
                              value="<?= htmlspecialchars($purchase['ID']) ?>">
                     </div>
-                   </td>
+                  </td>
                   <td class="col-voucher"><?=htmlspecialchars($purchase['VOC_NO'])?></td>
                   <td class="col-date"><?=htmlspecialchars($purchase['DATE'])?></td>
                   <td class="col-tp"><?=htmlspecialchars($purchase['TP_NO'])?></td>
@@ -818,7 +800,7 @@ function getSortLink($column, $label) {
                   <td class="col-total">₹<?=number_format($purchase['TAMT'], 2)?></td>
                   <td class="col-status">
                     <span class="status-badge <?=$statusClass?>"><?=$status?></span>
-                   </td>
+                  </td>
                   <td class="col-actions">
                     <div class="action-buttons">
                       <a href="purchase_edit.php?id=<?=htmlspecialchars($purchase['ID'])?>&mode=<?=htmlspecialchars($mode)?>" 
@@ -833,8 +815,8 @@ function getSortLink($column, $label) {
                         <i class="fa-solid fa-trash"></i>
                       </button>
                     </div>
-                   </td>
-                 </tr>
+                  </td>
+                </tr>
               <?php endforeach; ?>
             <?php else: ?>
               <tr>
@@ -922,17 +904,17 @@ function getSortLink($column, $label) {
                         <thead class="table-light">
                             <tr id="sizeHeaders">
                                 <!-- Headers will be dynamically generated -->
-                             </tr>
+                              </tr>
                         </thead>
                         <tbody>
-                             <tr>
+                              <tr>
                                 <td colspan="52" class="text-center text-muted py-4">
                                     <i class="fas fa-info-circle fa-2x mb-3"></i><br>
                                     <h5>Ready to Load Data</h5>
                                     <p class="mb-0">Click "Update Summary" to load purchase summary data</p>
                                     <small class="text-info">Note: Sizes >1L are grouped together</small>
-                                 </td>
-                             </tr>
+                                  </td>
+                              </tr>
                         </tbody>
                     </table>
                 </div>
@@ -959,7 +941,7 @@ function getSortLink($column, $label) {
     </div>
 </div>
 
-<!-- Import Purchase Modal -->
+<!-- Import Purchase Modal - Single File Input Version (Stock Cascading Logic Preserved) -->
 <div class="modal fade" id="importPurchaseModal" tabindex="-1" aria-labelledby="importPurchaseModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -988,18 +970,9 @@ function getSortLink($column, $label) {
                     </div>
 
                     <div class="mb-3">
-                        <label for="excelFile" class="form-label">Select Excel Files (Multiple)</label>
-                        <div class="file-drop-zone" id="fileDropZone">
-                            <div class="drop-zone-content">
-                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-2"></i>
-                                <p class="mb-1">Drag & drop Excel files here</p>
-                                <p class="text-muted small mb-2">or</p>
-                                <input type="file" name="excel_files[]" id="excelFile" class="form-control" accept=".csv,.xls,.xlsx" multiple required>
-                                <label for="excelFile" class="btn btn-outline-primary btn-sm mt-2">Browse Files</label>
-                            </div>
-                        </div>
-                        <div class="form-text">Allowed file type: .xlsx, .xls (Max 10MB each). Hold Ctrl/Cmd to select multiple files. Max 50 files at a time.</div>
-                        <div id="selectedFiles" class="mt-2"></div>
+                        <label for="excelFile" class="form-label">Select Excel File</label>
+                        <input type="file" name="excel_file" id="excelFile" class="form-control" accept=".csv,.xls,.xlsx" required>
+                        <div class="form-text">Allowed file types: .xlsx, .xls, .csv (Max 10MB).</div>
                     </div>
                     
                     <div class="row mt-3">
@@ -1137,6 +1110,52 @@ function getSortLink($column, $label) {
     </div>
 </div>
 
+<!-- Progress Modal for Enhanced Delete Tracking -->
+<div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-spinner fa-spin me-2"></i>
+                    Deleting Purchases
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cancelDeletion()"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <div class="progress" style="height: 30px;">
+                        <div id="deleteProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%;">
+                            0%
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <strong>Status:</strong> 
+                    <span id="progressStatus">Initializing...</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Current Item:</strong> 
+                    <span id="progressCurrentItem">-</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Progress:</strong> 
+                    <span id="progressCount">0</span> of <span id="progressTotal">0</span> purchases
+                </div>
+                <div class="alert alert-info small mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Please do not close this window. The deletion process may take several minutes for large batches.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cancelDeletion()">
+                    <i class="fas fa-times me-2"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -1190,7 +1209,7 @@ const categories = [
 ];
 
 // ============================================================================
-// ENHANCED BULK DELETE WITH PROGRESS BAR
+// ENHANCED BULK DELETE WITH PROGRESS BAR (From Version 1)
 // ============================================================================
 
 let selectedPurchases = new Set();
@@ -1200,57 +1219,6 @@ let currentSessionKey = null;
 
 // Function to show progress modal
 function showProgressModal(totalCount) {
-    // Create progress modal if it doesn't exist
-    if ($('#progressModal').length === 0) {
-        const progressModalHtml = `
-            <div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="fas fa-spinner fa-spin me-2"></i>
-                                Deleting Purchases
-                            </h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cancelDeletion()"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <div class="progress" style="height: 30px;">
-                                    <div id="deleteProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
-                                         role="progressbar" style="width: 0%;">
-                                        0%
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mb-2">
-                                <strong>Status:</strong> 
-                                <span id="progressStatus">Initializing...</span>
-                            </div>
-                            <div class="mb-2">
-                                <strong>Current Item:</strong> 
-                                <span id="progressCurrentItem">-</span>
-                            </div>
-                            <div class="mb-2">
-                                <strong>Progress:</strong> 
-                                <span id="progressCount">0</span> of <span id="progressTotal">0</span> purchases
-                            </div>
-                            <div class="alert alert-info small mt-3">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Please do not close this window. The deletion process may take several minutes for large batches.
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" onclick="cancelDeletion()">
-                                <i class="fas fa-times me-2"></i> Cancel
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        $('body').append(progressModalHtml);
-    }
-    
     $('#progressTotal').text(totalCount);
     $('#deleteProgressBar').css('width', '0%').text('0%');
     $('#progressCount').text('0');
@@ -1304,7 +1272,6 @@ function pollProgress(sessionKey) {
                     
                     updateProgress(response);
                     
-                    // Show success message
                     setTimeout(function() {
                         $('#progressModal').modal('hide');
                         showAlert('success', response.result?.message || 'Deletion completed successfully!');
@@ -1327,16 +1294,14 @@ function pollProgress(sessionKey) {
                 } else if (response.status === 'processing') {
                     updateProgress(response);
                 } else if (response.status === 'not_found') {
-                    // Still initializing, keep polling
                     console.log('Waiting for deletion to start...');
                 }
             },
             error: function() {
-                // Keep polling on error
                 console.log('Error polling progress, retrying...');
             }
         });
-    }, 1000); // Poll every second
+    }, 1000);
 }
 
 // Function to cancel deletion
@@ -1404,12 +1369,11 @@ $(document).on('change', '.purchase-checkbox', function() {
 $('#bulkDeleteBtn, #bulkDeleteBottomBtn').on('click', function() {
     if (selectedPurchases.size === 0) return;
     
-    // Show confirmation modal with count
     $('#deletePurchaseCount').text(selectedPurchases.size);
     $('#bulkDeleteModal').modal('show');
 });
 
-// Enhanced confirm bulk delete - simplified for reliability
+// Enhanced confirm bulk delete
 $('#confirmBulkDelete').off('click').on('click', function() {
     if (selectedPurchases.size === 0) return;
     
@@ -1419,7 +1383,6 @@ $('#confirmBulkDelete').off('click').on('click', function() {
     $('#bulkDeleteModal').modal('hide');
     $('#loadingModal').modal('show');
     
-    // Send AJAX request
     $.ajax({
         url: 'purchase_delete.php',
         type: 'POST',
@@ -1449,7 +1412,7 @@ $('#confirmBulkDelete').off('click').on('click', function() {
     });
 });
 
-// Enhanced single delete button click handler (adds progress for single delete too)
+// Enhanced single delete button click handler
 $(document).off('click', '.delete-single-btn').on('click', '.delete-single-btn', function() {
     currentPurchaseId = $(this).data('id');
     const purchaseDate = $(this).data('date');
@@ -1470,7 +1433,6 @@ $('#deleteConfirmBtn').off('click').on('click', function() {
     
     $('#deleteModal').modal('hide');
     
-    // Show progress modal for single delete too
     showProgressModal(1);
     $('#progressStatus').text('Deleting single purchase...');
     
@@ -1514,7 +1476,7 @@ $('#deleteModal').on('hidden.bs.modal', function() {
     currentPurchaseId = null;
 });
 
-// Function to load purchase summary via AJAX
+// Function to load purchase summary via AJAX (Dynamic Version from Version 1)
 function loadPurchaseSummary() {
     const fromDate = $('#purchaseFromDate').val();
     const toDate = $('#purchaseToDate').val();
@@ -1522,22 +1484,20 @@ function loadPurchaseSummary() {
 
     let totalSizeColumns = 0;
     categories.forEach(cat => totalSizeColumns += cat.sizes.length);
-    const totalColumns = totalSizeColumns + 1; // +1 for TP column
+    const totalColumns = totalSizeColumns + 1;
     
-    // Show loading state
     $('#purchaseSummaryTable tbody').html(`
-         <tr>
+        <tr>
             <td colspan="${totalColumns}" class="text-center py-4">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mt-2">Loading purchase summary data...</p>
                 <small class="text-muted">This may take a moment for large date ranges</small>
-             </td>
-         </tr>
+              </td>
+        </tr>
     `);
     
-    // Show scroll hints
     $('#horizontalHint, #verticalHint').hide();
     
     $.ajax({
@@ -1569,13 +1529,13 @@ function loadPurchaseSummary() {
             } catch (e) {
                 console.error('Error parsing response:', e);
                 $('#purchaseSummaryTable tbody').html(`
-                     <tr>
+                    <tr>
                         <td colspan="${totalColumns}" class="text-center text-danger py-4">
                             <i class="fas fa-exclamation-triangle"></i><br>
                             Error loading purchase summary<br>
                             <small>${e.message}</small>
-                         </td>
-                     </tr>
+                        </td>
+                    </tr>
                 `);
             }
         },
@@ -1595,37 +1555,33 @@ function loadPurchaseSummary() {
             }
             
             $('#purchaseSummaryTable tbody').html(`
-                 <tr>
+                <tr>
                     <td colspan="${totalColumns}" class="text-center text-danger py-4">
                         <i class="fas fa-exclamation-triangle"></i><br>
                         ${errorMessage}<br>
                         <small>Status: ${status}, Error: ${error}</small>
-                     </td>
-                 </tr>
+                    </td>
+                </tr>
             `);
         }
     });
 }
 
-// Function to update the purchase summary table with TP-wise data (dynamic filtering)
+// Function to update the purchase summary table with TP-wise data (Dynamic filtering from Version 1)
 function updatePurchaseSummaryTable(summaryData) {
     const tbody = $('#purchaseSummaryTable tbody');
     
-    // Clear existing table
     $('#purchaseSummaryTable thead').empty();
     tbody.empty();
 
-    // First, analyze which categories and sizes actually have data
     const activeCategories = {};
     const activeSizesByCategory = {};
     
-    // Initialize tracking for all categories
     categories.forEach(category => {
         activeSizesByCategory[category.name] = new Set();
         activeCategories[category.name] = false;
     });
     
-    // Analyze data to find active categories and sizes
     Object.values(summaryData).forEach(tpData => {
         if (tpData && tpData.categories) {
             categories.forEach(category => {
@@ -1634,7 +1590,6 @@ function updatePurchaseSummaryTable(summaryData) {
                     let hasDataInCategory = false;
                     
                     category.sizes.forEach((size, sizeIndex) => {
-                        // For wine, use internal size key for data lookup
                         let dataSize = size;
                         if (category.internalSizes && category.internalSizes[sizeIndex]) {
                             dataSize = category.internalSizes[sizeIndex];
@@ -1655,38 +1610,33 @@ function updatePurchaseSummaryTable(summaryData) {
         }
     });
     
-    // Filter categories to only those with data
     const filteredCategories = categories.filter(category => activeCategories[category.name]);
     
-    // If no categories have data, show empty state
     if (filteredCategories.length === 0) {
-        const totalColumns = 1; // Just TP column
+        const totalColumns = 1;
         tbody.html(`
-             <tr>
+            <tr>
                 <td colspan="${totalColumns}" class="text-center text-muted py-4">
                     <i class="fas fa-info-circle fa-2x mb-3"></i><br>
                     <h5>No Data Found</h5>
                     <p class="mb-0">No purchase data found for the selected date range</p>
-                 </td>
-             </tr>
+                </td>
+            </tr>
         `);
         $('#tpCount').text('0');
         return;
     }
     
-    // Calculate total columns based on filtered categories
     let totalSizeColumns = 0;
     filteredCategories.forEach(cat => {
         const activeSizes = activeSizesByCategory[cat.name];
         const sizeCount = cat.sizes.filter(size => activeSizes.has(size)).length;
         totalSizeColumns += sizeCount;
     });
-    const totalColumns = totalSizeColumns + 1; // +1 for TP column
+    const totalColumns = totalSizeColumns + 1;
     
-    // Create main header row with category groups
     const mainHeaderRow = $('<tr>').addClass('summary-header-group');
     
-    // TP No column
     mainHeaderRow.append($('<th>')
         .text('TP No.')
         .attr('rowspan', '2')
@@ -1698,7 +1648,6 @@ function updatePurchaseSummaryTable(summaryData) {
             'border': '2px solid #495057'
         }));
     
-    // Add category headers with colspan (only for categories with data)
     filteredCategories.forEach((category, index) => {
         const activeSizes = activeSizesByCategory[category.name];
         const sizeCount = category.sizes.filter(size => activeSizes.has(size)).length;
@@ -1721,7 +1670,6 @@ function updatePurchaseSummaryTable(summaryData) {
         }
     });
     
-    // Create size header row (only for active sizes)
     const sizeHeaderRow = $('<tr>').addClass('summary-size-header');
     
     filteredCategories.forEach((category, catIndex) => {
@@ -1752,7 +1700,6 @@ function updatePurchaseSummaryTable(summaryData) {
     
     $('#purchaseSummaryTable thead').append(mainHeaderRow, sizeHeaderRow);
     
-    // Create rows for each TP number
     let serialNumber = 1;
     const tpNumbers = Object.keys(summaryData);
     
@@ -1760,7 +1707,6 @@ function updatePurchaseSummaryTable(summaryData) {
         const tpData = summaryData[tpNo];
         const row = $('<tr>');
         
-        // TP number cell (fixed column)
         row.append($('<td>')
             .addClass('fixed-column fw-bold')
             .css({
@@ -1770,7 +1716,6 @@ function updatePurchaseSummaryTable(summaryData) {
             .text(tpNo)
             .attr('title', 'TP No: ' + tpNo));
         
-        // Add data for each filtered category and active size
         filteredCategories.forEach((category, catIndex) => {
             const activeSizes = activeSizesByCategory[category.name];
             const categorySizes = category.sizes.filter(size => activeSizes.has(size));
@@ -1781,14 +1726,12 @@ function updatePurchaseSummaryTable(summaryData) {
                 
                 let value = 0;
                 
-                // For wine, use internal size key for data lookup
                 let dataSize = size;
                 const sizeIndexInFullList = category.sizes.indexOf(size);
                 if (category.internalSizes && category.internalSizes[sizeIndexInFullList]) {
                     dataSize = category.internalSizes[sizeIndexInFullList];
                 }
                 
-                // Check if data exists for this category and size
                 if (tpData.categories && 
                     tpData.categories[category.name] && 
                     tpData.categories[category.name][dataSize]) {
@@ -1826,13 +1769,10 @@ function updatePurchaseSummaryTable(summaryData) {
         serialNumber++;
     });
     
-    // Add total row (only for active categories and sizes)
     addTotalRowDynamic(summaryData, filteredCategories, activeSizesByCategory);
     
-    // Update statistics
     $('#tpCount').text(tpNumbers.length);
     
-    // Show scroll hints if table is large
     setTimeout(() => {
         const tableContainer = $('#summaryTableContainer');
         const table = $('#purchaseSummaryTable');
@@ -1845,18 +1785,16 @@ function updatePurchaseSummaryTable(summaryData) {
             $('#verticalHint').show();
         }
         
-        // Auto-hide hints after 5 seconds
         setTimeout(() => {
             $('#horizontalHint, #verticalHint').fadeOut();
         }, 5000);
     }, 500);
 }
 
-// Function to add total row dynamically for active categories and sizes
+// Function to add total row dynamically
 function addTotalRowDynamic(summaryData, filteredCategories, activeSizesByCategory) {
     const totals = {};
     
-    // Initialize totals for active categories and sizes
     filteredCategories.forEach(category => {
         totals[category.name] = {};
         const activeSizes = activeSizesByCategory[category.name];
@@ -1867,7 +1805,6 @@ function addTotalRowDynamic(summaryData, filteredCategories, activeSizesByCatego
         });
     });
     
-    // Calculate totals
     Object.values(summaryData).forEach(tpData => {
         if (tpData && tpData.categories) {
             filteredCategories.forEach(category => {
@@ -1876,7 +1813,6 @@ function addTotalRowDynamic(summaryData, filteredCategories, activeSizesByCatego
                 category.sizes.forEach((size, sizeIndex) => {
                     if (!activeSizes.has(size)) return;
                     
-                    // For wine, use internal size key for data lookup
                     let dataSize = size;
                     if (category.internalSizes && category.internalSizes[sizeIndex]) {
                         dataSize = category.internalSizes[sizeIndex];
@@ -1890,7 +1826,6 @@ function addTotalRowDynamic(summaryData, filteredCategories, activeSizesByCatego
         }
     });
     
-    // Check if we have any totals
     let hasTotals = false;
     filteredCategories.forEach(category => {
         const activeSizes = activeSizesByCategory[category.name];
@@ -1959,10 +1894,8 @@ function printPurchaseSummary() {
     const currentDate = new Date().toLocaleDateString();
     const currentTime = new Date().toLocaleTimeString();
     
-    // Clone the table for printing
     const printTable = $('#purchaseSummaryTable').clone();
     
-    // Remove fixed column class for print
     printTable.find('.fixed-column').removeClass('fixed-column');
     printTable.find('th, td').css({
         'position': 'static',
@@ -2095,146 +2028,60 @@ function printPurchaseSummary() {
     printWindow.document.close();
 }
 
-// File upload functionality
+// File upload functionality - Single File Version (Simplified from Version 2)
 $(document).ready(function() {
     const fileInput = $('#excelFile');
-    const fileDropZone = $('#fileDropZone');
     const importForm = $('#importForm');
     const importSubmit = $('#importSubmit');
-    const selectedFilesDiv = $('#selectedFiles');
     
-    // Drag and drop events
-    fileDropZone.on('dragover', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $(this).addClass('dragover');
-    });
-    
-    fileDropZone.on('dragleave', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $(this).removeClass('dragover');
-    });
-    
-    fileDropZone.on('drop', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        $(this).removeClass('dragover');
-        
-        const files = e.originalEvent.dataTransfer.files;
-        if (files.length > 0) {
-            // Use DataTransfer to set files to the input
-            const dataTransfer = new DataTransfer();
-            for (let i = 0; i < files.length; i++) {
-                if (files[i].name.toLowerCase().match(/\.(csv|xls|xlsx)$/)) {
-                    dataTransfer.items.add(files[i]);
-                }
-            }
-            fileInput[0].files = dataTransfer.files;
-            
-            // Trigger change event
-            fileInput.trigger('change');
-        }
-    });
-    
-    // Click on drop zone also opens file dialog
-    fileDropZone.on('click', function(e) {
-        if (e.target !== fileInput[0] && !$(e.target).is('label')) {
-            fileInput.trigger('click');
-        }
-    });
-    
-    // File selected - show validation
     fileInput.on('change', function() {
-        const files = this.files;
-        const maxFiles = 50; // Match PHP max_file_uploads
-        
-        // Check if too many files selected
-        if (files.length > maxFiles) {
-            alert('You can only select up to ' + maxFiles + ' files at a time. Please select fewer files.');
-            $(this).val('');
-            selectedFilesDiv.html('<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select up to ' + maxFiles + ' files</small>');
-            return;
-        }
-        
-        selectedFilesDiv.empty();
-        
-        if (files.length > 0) {
-            let validFiles = true;
-            let fileListHtml = '<ul class="list-group mb-2" style="max-height: 150px; overflow-y: auto;">';
+        const file = this.files[0];
+        if (file) {
+            const fileSize = (file.size / 1024 / 1024).toFixed(2);
             
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileSize = (file.size / 1024 / 1024).toFixed(2); // MB
-                
-                // Check file size (10MB max)
-                if (fileSize > 10) {
-                    alert('File "' + file.name + '" exceeds 10MB limit. Please select smaller files.');
-                    validFiles = false;
-                    continue;
-                }
-                
-                // Check file extension - CSV, XLS, or XLSX
-                const fileName = file.name.toLowerCase();
-                if (!fileName.match(/\.(csv|xls|xlsx)$/)) {
-                    alert('Please select only CSV or Excel files (.csv, .xls, .xlsx). File "' + file.name + '" is not a valid file.');
-                    validFiles = false;
-                    continue;
-                }
-                
-                fileListHtml += '<li class="list-group-item d-flex justify-content-between align-items-center py-1">';
-                fileListHtml += '<small><i class="fas fa-file-csv me-2"></i>' + file.name + '</small>';
-                fileListHtml += '<span class="badge bg-secondary rounded-pill">' + fileSize + ' MB</span>';
-                fileListHtml += '</li>';
-                
-                console.log('File selected:', file.name, 'Size:', fileSize + 'MB');
+            if (fileSize > 10) {
+                alert('File size exceeds 10MB limit. Please select a smaller file.');
+                $(this).val('');
+                return;
             }
             
-            fileListHtml += '</ul>';
-            
-            if (validFiles && files.length > 0) {
-                selectedFilesDiv.html(fileListHtml + '<small class="text-success"><i class="fas fa-check-circle me-1"></i>' + files.length + ' file(s) selected ready for import</small>');
-            } else {
-                $(this).val(''); // Clear file input if invalid
-                selectedFilesDiv.html('<small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Please select valid Excel files</small>');
+            const fileName = file.name.toLowerCase();
+            if (!fileName.match(/\.(csv|xls|xlsx)$/)) {
+                alert('Please select only Excel or CSV files (.xlsx, .xls, .csv)');
+                $(this).val('');
+                return;
             }
+            
+            console.log('File selected:', file.name, 'Size:', fileSize + 'MB');
         }
     });
     
-    // Form submission
     importForm.on('submit', function(e) {
-        const files = fileInput[0].files;
-        if (!files || files.length === 0) {
+        const file = fileInput[0].files[0];
+        if (!file) {
             e.preventDefault();
-            alert('Please select at least one Excel file to upload');
+            alert('Please select a file to upload');
             fileInput.focus();
             return;
         }
         
-        // Validate all files
-        for (let i = 0; i < files.length; i++) {
-            const fileSize = (files[i].size / 1024 / 1024).toFixed(2);
-            if (fileSize > 10) {
-                e.preventDefault();
-                alert('File "' + files[i].name + '" exceeds 10MB limit. Please select smaller files.');
-                importSubmit.html('<i class="fas fa-upload me-2"></i> Import Data').prop('disabled', false);
-                return;
-            }
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        if (fileSize > 10) {
+            e.preventDefault();
+            alert('File size exceeds 10MB limit. Please select a smaller file.');
+            importSubmit.html('<i class="fas fa-upload me-2"></i> Import Excel Data').prop('disabled', false);
+            fileInput.val('');
+            return;
         }
         
-        // Show loading
-        importSubmit.html('<i class="fas fa-spinner fa-spin me-2"></i> Importing ' + files.length + ' file(s)...').prop('disabled', true);
+        importSubmit.html('<i class="fas fa-spinner fa-spin me-2"></i> Importing...').prop('disabled', true);
     });
     
-    // Reset button state when modal is hidden
     $('#importPurchaseModal').on('hidden.bs.modal', function() {
         importSubmit.html('<i class="fas fa-upload me-2"></i> Import Excel Data').prop('disabled', false);
-        // Clear file input
         fileInput.val('');
-        selectedFilesDiv.empty();
     });
     
-    // Initialize purchase summary modal
     $('#purchaseSummaryModal').on('show.bs.modal', function() {
         if (!$('#purchaseFromDate').val()) {
             $('#purchaseFromDate').val('<?= date('Y-m-01') ?>');
@@ -2243,17 +2090,14 @@ $(document).ready(function() {
             $('#purchaseToDate').val('<?= date('Y-m-d') ?>');
         }
         
-        // Load initial summary
         loadPurchaseSummary();
     });
     
-    // Reset scroll hints when modal is shown
     $('#purchaseSummaryModal').on('shown.bs.modal', function() {
         $('#horizontalHint, #verticalHint').hide();
     });
 });
 
-// Add hover effects to table headers
 $(document).ready(function() {
     $('.styled-table thead th').hover(
         function() {
@@ -2267,7 +2111,6 @@ $(document).ready(function() {
     );
 });
 
-// Auto-hide alerts after 5 seconds
 setTimeout(() => {
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(alert => {
@@ -2276,7 +2119,6 @@ setTimeout(() => {
     });
 }, 5000);
 
-// Apply filters with date range validation
 $('form').on('submit', function(e) {
     const fromDate = $('input[name="from_date"]').val();
     const toDate = $('input[name="to_date"]').val();
@@ -2288,7 +2130,6 @@ $('form').on('submit', function(e) {
     }
 });
 
-// Alert function
 function showAlert(type, message) {
     $('.alert').alert('close');
     
@@ -2303,9 +2144,7 @@ function showAlert(type, message) {
     $('.content-area').prepend(alertHtml);
 }
 
-// Add keyboard navigation for purchase summary table
 $(document).on('keydown', function(e) {
-    // Only handle when purchase summary modal is open
     if ($('#purchaseSummaryModal').hasClass('show')) {
         const tableContainer = $('#summaryTableContainer')[0];
         

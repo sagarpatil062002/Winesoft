@@ -3,7 +3,7 @@
         'name' => 'winesoft/winesoft',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => 'ece74ade2a465906f8c6b0baeafb9c482d0ee03d',
+        'reference' => 'f1b14728b727ab281a4bbb37e97a4510c5f0e7c8',
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -67,7 +67,7 @@
         'winesoft/winesoft' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => 'ece74ade2a465906f8c6b0baeafb9c482d0ee03d',
+            'reference' => 'f1b14728b727ab281a4bbb37e97a4510c5f0e7c8',
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

@@ -43636,3 +43636,1979 @@
     [has_more] => 
 )
 
+[2026-04-01 13:27:50] Script started
+[2026-04-01 13:27:50] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-04-01 13:27:50] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-04-01 13:27:50] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:27:50] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:27:50] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-04-01 13:27:50] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:27:50] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:27:50] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 13:27:50] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-04-01 13:27:50] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:27:50] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:27:50] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-04-01 13:27:50] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-04-01 13:27:50] Initial counts (first batch) - Array
+(
+    [total] => 72
+    [with_stock] => 72
+)
+
+[2026-04-01 13:27:50] Script completed, rendering page
+[2026-04-01 13:27:51] Script started
+[2026-04-01 13:27:51] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-04-01 13:27:51] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-04-01 13:27:51] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:27:51] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:27:51] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-04-01 13:27:51] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:27:51] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:27:51] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 13:27:51] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-04-01 13:27:51] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:27:51] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:27:51] AJAX get_items called - Array
+(
+    [page] => 1
+    [view] => with_stock
+    [mode] => F
+    [search] => 
+    [first_batch_data] => Array
+        (
+            [date] => 2021-04-01
+            [month] => 2021-04
+            [day] => 01
+            [day_num] => 1
+        )
+
+)
+
+[2026-04-01 13:27:51] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-04-01 13:27:51] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-04-01 13:27:51] AJAX get_items count query result - Array
+(
+    [total] => 72
+    [batch_month] => 2021-04
+    [batch_day] => 01
+)
+
+[2026-04-01 13:27:51] AJAX get_items returning - Array
+(
+    [items_count] => 72
+    [total] => 72
+    [has_more] => 
+)
+
+[2026-04-01 13:28:11] Script started
+[2026-04-01 13:28:11] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-04-01 13:28:11] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-04-01 13:28:11] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:11] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:11] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-04-01 13:28:11] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:11] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:11] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 13:28:11] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-04-01 13:28:11] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:11] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:11] Import started - Array
+(
+    [file] => opening_balance_Garava 01042021l.xlsx
+)
+
+[2026-04-01 13:28:11] Processing Excel file - Array
+(
+    [name] => opening_balance_Garava 01042021l.xlsx
+    [ext] => xlsx
+)
+
+[2026-04-01 13:28:12] Excel file loaded, rows count: 73
+[2026-04-01 13:28:12] Excel data parsed - Array
+(
+    [rows] => 72
+)
+
+[2026-04-01 13:28:12] Loaded valid items - Array
+(
+    [count] => 16175
+)
+
+[2026-04-01 13:28:12] ========== IMPORT DEBUG START ==========
+[2026-04-01 13:28:12] File: - Array
+(
+    [name] => opening_balance_Garava 01042021l.xlsx
+    [size] => 13009
+    [is_excel] => 1
+)
+
+[2026-04-01 13:28:12] Start date for import: - Array
+(
+    [start_date] => 2021-04-01
+)
+
+[2026-04-01 13:28:12] Items data array loaded: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 13:28:12] Sample imported items: - Array
+(
+    [0] => Array
+        (
+            [code] => SCMPL0028274
+            [name] => 8 PM Special Whisky
+            [size] => 90 ML (Pet)-100
+            [balance] => 500
+        )
+
+    [1] => Array
+        (
+            [code] => SCMPL0028275
+            [name] => 8 PM Special Whisky
+            [size] => 180 ML
+            [balance] => 500
+        )
+
+    [2] => Array
+        (
+            [code] => SCMPL0028356
+            [name] => 8 PM Special Whisky
+            [size] => 375 ML
+            [balance] => 50
+        )
+
+    [3] => Array
+        (
+            [code] => SCMBR0021532
+            [name] => Amstel Super Premium Strong beer
+            [size] => 650 ML
+            [balance] => 300
+        )
+
+    [4] => Array
+        (
+            [code] => SCMPL0009668
+            [name] => Antiquity Blue Whisky
+            [size] => 180 ML
+            [balance] => 60
+        )
+
+)
+
+[2026-04-01 13:28:12] ========== DATABASE ITEMS ==========
+[2026-04-01 13:28:12] Valid items loaded from database: - Array
+(
+    [count] => 16175
+)
+
+[2026-04-01 13:28:12] Sample database items: - Array
+(
+    [SCMBR0009735] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+    [SCMBR0009735|Budweiser Premium King of Beer|330 ML] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+    [SCMBR0009735|Budweiser Premium King of Beer] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+    [Budweiser Premium King of Beer] => Array
+        (
+            [code] => SCMBR0027104
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => 
+            [size_desc] => 
+        )
+
+    [SCMBR0009735|BUDWEISER PREMIUM KING OF BEER] => Array
+        (
+            [code] => SCMBR0009735
+            [details] => Budweiser Premium King of Beer
+            [class] => M
+            [class_code_new] => CLS008
+            [size_code] => SIZE054
+            [size_desc] => 330 ML
+        )
+
+)
+
+[2026-04-01 13:28:12] ========== DAILY STOCK TABLE CHECK ==========
+[2026-04-01 13:28:12] Daily stock table exists: - Array
+(
+    [table] => tbldailystock_5
+    [exists] => 1
+)
+
+[2026-04-01 13:28:12] Existing items in daily stock for current month: - Array
+(
+    [month] => 2026-04
+    [count] => 3
+    [items] => Array
+        (
+            [0] => Array
+                (
+                    [ITEM_CODE] => SCMBR0028501
+                    [STK_MONTH] => 2026-04
+                )
+
+            [1] => Array
+                (
+                    [ITEM_CODE] => SCMPL0025459
+                    [STK_MONTH] => 2026-04
+                )
+
+            [2] => Array
+                (
+                    [ITEM_CODE] => SCMKB0030479
+                    [STK_MONTH] => 2026-04
+                )
+
+        )
+
+)
+
+[2026-04-01 13:28:12] Excel import processed - Array
+(
+    [rows] => 72
+    [imported] => 72
+    [skipped] => 0
+)
+
+[2026-04-01 13:28:12] ========== IMPORTED ITEMS ==========
+[2026-04-01 13:28:12] Items imported to tblitem_stock: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 13:28:12] First 20 imported items: - Array
+(
+    [0] => Array
+        (
+            [code] => SCMPL0028274
+            [balance] => 500
+        )
+
+    [1] => Array
+        (
+            [code] => SCMPL0028275
+            [balance] => 500
+        )
+
+    [2] => Array
+        (
+            [code] => SCMPL0028356
+            [balance] => 50
+        )
+
+    [3] => Array
+        (
+            [code] => SCMBR0021532
+            [balance] => 300
+        )
+
+    [4] => Array
+        (
+            [code] => SCMPL0009668
+            [balance] => 60
+        )
+
+    [5] => Array
+        (
+            [code] => SCMPL0009688
+            [balance] => 50
+        )
+
+    [6] => Array
+        (
+            [code] => SCMPL0022277
+            [balance] => 500
+        )
+
+    [7] => Array
+        (
+            [code] => SCMPL0022280
+            [balance] => 32
+        )
+
+    [8] => Array
+        (
+            [code] => SCMPL0018737
+            [balance] => 500
+        )
+
+    [9] => Array
+        (
+            [code] => SCMKS0026878
+            [balance] => 50
+        )
+
+    [10] => Array
+        (
+            [code] => SCMPL0009775
+            [balance] => 500
+        )
+
+    [11] => Array
+        (
+            [code] => SCMPL0010676
+            [balance] => 30
+        )
+
+    [12] => Array
+        (
+            [code] => SCMPL0010677
+            [balance] => 10
+        )
+
+    [13] => Array
+        (
+            [code] => SCMPL0010678
+            [balance] => 1500
+        )
+
+    [14] => Array
+        (
+            [code] => SCMPL0010679
+            [balance] => 1000
+        )
+
+    [15] => Array
+        (
+            [code] => SCMKB0030479
+            [balance] => 300
+        )
+
+    [16] => Array
+        (
+            [code] => SCMKB0031391
+            [balance] => 500
+        )
+
+    [17] => Array
+        (
+            [code] => SCMBR0018142
+            [balance] => 300
+        )
+
+    [18] => Array
+        (
+            [code] => SCMBR0027089
+            [balance] => 300
+        )
+
+    [19] => Array
+        (
+            [code] => SCMBR0018132
+            [balance] => 121
+        )
+
+)
+
+[2026-04-01 13:28:12] ========== DAILY STOCK UPDATE ==========
+[2026-04-01 13:28:12] Items sent to daily stock update (balance > 0): - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 13:28:12] First 20 items for daily stock: - Array
+(
+    [SCMPL0028274] => 500
+    [SCMPL0028275] => 500
+    [SCMPL0028356] => 50
+    [SCMBR0021532] => 300
+    [SCMPL0009668] => 60
+    [SCMPL0009688] => 50
+    [SCMPL0022277] => 500
+    [SCMPL0022280] => 32
+    [SCMPL0018737] => 500
+    [SCMKS0026878] => 50
+    [SCMPL0009775] => 500
+    [SCMPL0010676] => 30
+    [SCMPL0010677] => 10
+    [SCMPL0010678] => 1500
+    [SCMPL0010679] => 1000
+    [SCMKB0030479] => 300
+    [SCMKB0031391] => 500
+    [SCMBR0018142] => 300
+    [SCMBR0027089] => 300
+    [SCMBR0018132] => 121
+)
+
+[2026-04-01 13:28:12] ========== CALLING UPDATE DAILY STOCK RANGE ==========
+[2026-04-01 13:28:12] Updating daily stock - Array
+(
+    [items] => 72
+    [start_date] => 2021-04-01
+)
+
+[2026-04-01 13:28:12] ========== UPDATE DAILY STOCK RANGE START ========== - Array
+(
+    [items_count] => 72
+    [start_date] => 2021-04-01
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [mode] => F
+)
+
+[2026-04-01 13:28:12] Date range for update - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+)
+
+[2026-04-01 13:28:12] All months to process - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:13] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-04
+)
+
+[2026-04-01 13:28:13] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-05
+)
+
+[2026-04-01 13:28:13] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-06
+)
+
+[2026-04-01 13:28:13] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-07
+)
+
+[2026-04-01 13:28:14] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-08
+)
+
+[2026-04-01 13:28:14] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-09
+)
+
+[2026-04-01 13:28:14] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-10
+)
+
+[2026-04-01 13:28:14] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-11
+)
+
+[2026-04-01 13:28:14] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2021-12
+)
+
+[2026-04-01 13:28:15] Inserting base record for - Array
+(
+    [item_code] => SCMKB0030479
+    [month] => 2022-01
+)
+
+[2026-04-01 13:28:19] Successfully updated daily stock with cascade through all months
+[2026-04-01 13:28:19] Completed updateDailyStockRange
+[2026-04-01 13:28:19] ========== UPDATE DAILY STOCK RANGE END ==========
+[2026-04-01 13:28:19] ========== DAILY STOCK AFTER UPDATE ==========
+[2026-04-01 13:28:19] Checking daily stock for months: - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:19] Sample from tbldailystock_5_04_21: - Array
+(
+    [count] => 5
+    [items] => Array
+        (
+            [0] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028274
+                    [STK_MONTH] => 2021-04
+                )
+
+            [1] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028275
+                    [STK_MONTH] => 2021-04
+                )
+
+            [2] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028356
+                    [STK_MONTH] => 2021-04
+                )
+
+            [3] => Array
+                (
+                    [ITEM_CODE] => SCMBR0021532
+                    [STK_MONTH] => 2021-04
+                )
+
+            [4] => Array
+                (
+                    [ITEM_CODE] => SCMPL0009668
+                    [STK_MONTH] => 2021-04
+                )
+
+        )
+
+)
+
+[2026-04-01 13:28:19] Detailed data for item SCMPL0028274 in 2021-04: - Array
+(
+    [DAY_01_OPEN] => 500
+    [DAY_01_CLOSING] => 500
+    [DAY_02_OPEN] => 500
+    [DAY_02_CLOSING] => 500
+    [DAY_03_OPEN] => 500
+    [DAY_03_CLOSING] => 500
+    [DAY_04_OPEN] => 500
+    [DAY_04_CLOSING] => 500
+    [DAY_05_OPEN] => 500
+    [DAY_05_CLOSING] => 500
+    [DAY_06_OPEN] => 500
+    [DAY_06_CLOSING] => 500
+    [DAY_07_OPEN] => 500
+    [DAY_07_CLOSING] => 500
+    [DAY_08_OPEN] => 500
+    [DAY_08_CLOSING] => 500
+    [DAY_09_OPEN] => 500
+    [DAY_09_CLOSING] => 500
+    [DAY_10_OPEN] => 500
+    [DAY_10_CLOSING] => 500
+    [DAY_11_OPEN] => 500
+    [DAY_11_CLOSING] => 500
+    [DAY_12_OPEN] => 500
+    [DAY_12_CLOSING] => 500
+    [DAY_13_OPEN] => 500
+    [DAY_13_CLOSING] => 500
+    [DAY_14_OPEN] => 500
+    [DAY_14_CLOSING] => 500
+    [DAY_15_OPEN] => 500
+    [DAY_15_CLOSING] => 500
+    [DAY_16_OPEN] => 500
+    [DAY_16_CLOSING] => 500
+    [DAY_17_OPEN] => 500
+    [DAY_17_CLOSING] => 500
+    [DAY_18_OPEN] => 500
+    [DAY_18_CLOSING] => 500
+    [DAY_19_OPEN] => 500
+    [DAY_19_CLOSING] => 500
+    [DAY_20_OPEN] => 500
+    [DAY_20_CLOSING] => 500
+    [DAY_21_OPEN] => 500
+    [DAY_21_CLOSING] => 500
+    [DAY_22_OPEN] => 500
+    [DAY_22_CLOSING] => 500
+    [DAY_23_OPEN] => 500
+    [DAY_23_CLOSING] => 500
+    [DAY_24_OPEN] => 500
+    [DAY_24_CLOSING] => 500
+    [DAY_25_OPEN] => 500
+    [DAY_25_CLOSING] => 500
+    [DAY_26_OPEN] => 500
+    [DAY_26_CLOSING] => 500
+    [DAY_27_OPEN] => 500
+    [DAY_27_CLOSING] => 500
+    [DAY_28_OPEN] => 500
+    [DAY_28_CLOSING] => 500
+    [DAY_29_OPEN] => 500
+    [DAY_29_CLOSING] => 500
+    [DAY_30_OPEN] => 500
+    [DAY_30_CLOSING] => 500
+)
+
+[2026-04-01 13:28:19] Sample from tbldailystock_5_05_21: - Array
+(
+    [count] => 5
+    [items] => Array
+        (
+            [0] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028274
+                    [STK_MONTH] => 2021-05
+                )
+
+            [1] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028275
+                    [STK_MONTH] => 2021-05
+                )
+
+            [2] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028356
+                    [STK_MONTH] => 2021-05
+                )
+
+            [3] => Array
+                (
+                    [ITEM_CODE] => SCMBR0021532
+                    [STK_MONTH] => 2021-05
+                )
+
+            [4] => Array
+                (
+                    [ITEM_CODE] => SCMPL0009668
+                    [STK_MONTH] => 2021-05
+                )
+
+        )
+
+)
+
+[2026-04-01 13:28:19] Detailed data for item SCMPL0028274 in 2021-05: - Array
+(
+    [DAY_01_OPEN] => 500
+    [DAY_01_CLOSING] => 500
+    [DAY_02_OPEN] => 500
+    [DAY_02_CLOSING] => 500
+    [DAY_03_OPEN] => 500
+    [DAY_03_CLOSING] => 500
+    [DAY_04_OPEN] => 500
+    [DAY_04_CLOSING] => 500
+    [DAY_05_OPEN] => 500
+    [DAY_05_CLOSING] => 500
+    [DAY_06_OPEN] => 500
+    [DAY_06_CLOSING] => 500
+    [DAY_07_OPEN] => 500
+    [DAY_07_CLOSING] => 500
+    [DAY_08_OPEN] => 500
+    [DAY_08_CLOSING] => 500
+    [DAY_09_OPEN] => 500
+    [DAY_09_CLOSING] => 500
+    [DAY_10_OPEN] => 500
+    [DAY_10_CLOSING] => 500
+    [DAY_11_OPEN] => 500
+    [DAY_11_CLOSING] => 500
+    [DAY_12_OPEN] => 500
+    [DAY_12_CLOSING] => 500
+    [DAY_13_OPEN] => 500
+    [DAY_13_CLOSING] => 500
+    [DAY_14_OPEN] => 500
+    [DAY_14_CLOSING] => 500
+    [DAY_15_OPEN] => 500
+    [DAY_15_CLOSING] => 500
+    [DAY_16_OPEN] => 500
+    [DAY_16_CLOSING] => 500
+    [DAY_17_OPEN] => 500
+    [DAY_17_CLOSING] => 500
+    [DAY_18_OPEN] => 500
+    [DAY_18_CLOSING] => 500
+    [DAY_19_OPEN] => 500
+    [DAY_19_CLOSING] => 500
+    [DAY_20_OPEN] => 500
+    [DAY_20_CLOSING] => 500
+    [DAY_21_OPEN] => 500
+    [DAY_21_CLOSING] => 500
+    [DAY_22_OPEN] => 500
+    [DAY_22_CLOSING] => 500
+    [DAY_23_OPEN] => 500
+    [DAY_23_CLOSING] => 500
+    [DAY_24_OPEN] => 500
+    [DAY_24_CLOSING] => 500
+    [DAY_25_OPEN] => 500
+    [DAY_25_CLOSING] => 500
+    [DAY_26_OPEN] => 500
+    [DAY_26_CLOSING] => 500
+    [DAY_27_OPEN] => 500
+    [DAY_27_CLOSING] => 500
+    [DAY_28_OPEN] => 500
+    [DAY_28_CLOSING] => 500
+    [DAY_29_OPEN] => 500
+    [DAY_29_CLOSING] => 500
+    [DAY_30_OPEN] => 500
+    [DAY_30_CLOSING] => 500
+    [DAY_31_OPEN] => 500
+    [DAY_31_CLOSING] => 500
+)
+
+[2026-04-01 13:28:19] Sample from tbldailystock_5_06_21: - Array
+(
+    [count] => 5
+    [items] => Array
+        (
+            [0] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028274
+                    [STK_MONTH] => 2021-06
+                )
+
+            [1] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028275
+                    [STK_MONTH] => 2021-06
+                )
+
+            [2] => Array
+                (
+                    [ITEM_CODE] => SCMPL0028356
+                    [STK_MONTH] => 2021-06
+                )
+
+            [3] => Array
+                (
+                    [ITEM_CODE] => SCMBR0021532
+                    [STK_MONTH] => 2021-06
+                )
+
+            [4] => Array
+                (
+                    [ITEM_CODE] => SCMPL0009668
+                    [STK_MONTH] => 2021-06
+                )
+
+        )
+
+)
+
+[2026-04-01 13:28:19] Detailed data for item SCMPL0028274 in 2021-06: - Array
+(
+    [DAY_01_OPEN] => 500
+    [DAY_01_CLOSING] => 500
+    [DAY_02_OPEN] => 500
+    [DAY_02_CLOSING] => 500
+    [DAY_03_OPEN] => 500
+    [DAY_03_CLOSING] => 500
+    [DAY_04_OPEN] => 500
+    [DAY_04_CLOSING] => 500
+    [DAY_05_OPEN] => 500
+    [DAY_05_CLOSING] => 500
+    [DAY_06_OPEN] => 500
+    [DAY_06_CLOSING] => 500
+    [DAY_07_OPEN] => 500
+    [DAY_07_CLOSING] => 500
+    [DAY_08_OPEN] => 500
+    [DAY_08_CLOSING] => 500
+    [DAY_09_OPEN] => 500
+    [DAY_09_CLOSING] => 500
+    [DAY_10_OPEN] => 500
+    [DAY_10_CLOSING] => 500
+    [DAY_11_OPEN] => 500
+    [DAY_11_CLOSING] => 500
+    [DAY_12_OPEN] => 500
+    [DAY_12_CLOSING] => 500
+    [DAY_13_OPEN] => 500
+    [DAY_13_CLOSING] => 500
+    [DAY_14_OPEN] => 500
+    [DAY_14_CLOSING] => 500
+    [DAY_15_OPEN] => 500
+    [DAY_15_CLOSING] => 500
+    [DAY_16_OPEN] => 500
+    [DAY_16_CLOSING] => 500
+    [DAY_17_OPEN] => 500
+    [DAY_17_CLOSING] => 500
+    [DAY_18_OPEN] => 500
+    [DAY_18_CLOSING] => 500
+    [DAY_19_OPEN] => 500
+    [DAY_19_CLOSING] => 500
+    [DAY_20_OPEN] => 500
+    [DAY_20_CLOSING] => 500
+    [DAY_21_OPEN] => 500
+    [DAY_21_CLOSING] => 500
+    [DAY_22_OPEN] => 500
+    [DAY_22_CLOSING] => 500
+    [DAY_23_OPEN] => 500
+    [DAY_23_CLOSING] => 500
+    [DAY_24_OPEN] => 500
+    [DAY_24_CLOSING] => 500
+    [DAY_25_OPEN] => 500
+    [DAY_25_CLOSING] => 500
+    [DAY_26_OPEN] => 500
+    [DAY_26_CLOSING] => 500
+    [DAY_27_OPEN] => 500
+    [DAY_27_CLOSING] => 500
+    [DAY_28_OPEN] => 500
+    [DAY_28_CLOSING] => 500
+    [DAY_29_OPEN] => 500
+    [DAY_29_CLOSING] => 500
+    [DAY_30_OPEN] => 500
+    [DAY_30_CLOSING] => 500
+)
+
+[2026-04-01 13:28:19] Transaction committed
+[2026-04-01 13:28:19] ========== IMPORT COMPLETE - FINAL SUMMARY ==========
+[2026-04-01 13:28:19] Total rows processed: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 13:28:19] Total items imported to tblitem_stock: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 13:28:19] Total items skipped: - Array
+(
+    [count] => 0
+)
+
+[2026-04-01 13:28:19] Total items sent to daily stock update: - Array
+(
+    [count] => 72
+)
+
+[2026-04-01 13:28:19] Financial Year: - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+)
+
+[2026-04-01 13:28:19] Final count in tbldailystock_5: - Array
+(
+    [total_records] => 3
+)
+
+[2026-04-01 13:28:19] ========== DEBUG COMPLETE ==========
+[2026-04-01 13:28:19] Script started
+[2026-04-01 13:28:19] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-04-01 13:28:19] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-04-01 13:28:19] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:19] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:19] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-04-01 13:28:19] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:19] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:19] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 13:28:19] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-04-01 13:28:19] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:19] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:19] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-04-01 13:28:19] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-04-01 13:28:20] Initial counts (first batch) - Array
+(
+    [total] => 74
+    [with_stock] => 74
+)
+
+[2026-04-01 13:28:20] Script completed, rendering page
+[2026-04-01 13:28:20] Script started
+[2026-04-01 13:28:20] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-04-01 13:28:20] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-04-01 13:28:20] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:20] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:20] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-04-01 13:28:20] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:20] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:20] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 13:28:20] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-04-01 13:28:20] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:20] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:20] AJAX get_items called - Array
+(
+    [page] => 1
+    [view] => with_stock
+    [mode] => F
+    [search] => 
+    [first_batch_data] => Array
+        (
+            [date] => 2021-04-01
+            [month] => 2021-04
+            [day] => 01
+            [day_num] => 1
+        )
+
+)
+
+[2026-04-01 13:28:21] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-04-01 13:28:21] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-04-01 13:28:21] AJAX get_items count query result - Array
+(
+    [total] => 73
+    [batch_month] => 2021-04
+    [batch_day] => 01
+)
+
+[2026-04-01 13:28:21] AJAX get_items returning - Array
+(
+    [items_count] => 73
+    [total] => 73
+    [has_more] => 
+)
+
+[2026-04-01 13:28:33] Script started
+[2026-04-01 13:28:33] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-04-01 13:28:33] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-04-01 13:28:33] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:33] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:33] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:33] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 13:28:33] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-04-01 13:28:33] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:33] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-04-01 13:28:33] Initial counts (first batch) - Array
+(
+    [total] => 74
+    [with_stock] => 74
+)
+
+[2026-04-01 13:28:33] Script completed, rendering page
+[2026-04-01 13:28:33] Script started
+[2026-04-01 13:28:33] Financial Year - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-31
+    [fin_year_id] => 3
+)
+
+[2026-04-01 13:28:33] Allowed classes - Array
+(
+    [0] => W
+    [1] => V
+    [2] => M
+    [3] => F
+    [4] => D
+    [5] => K
+    [6] => G
+    [7] => R
+)
+
+[2026-04-01 13:28:33] Calling findFirstOpeningBatchDate with - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:33] findFirstOpeningBatchDate called - Array
+(
+    [comp_id] => 5
+    [mode] => F
+    [fy_start] => 2021-04-01
+    [fy_end] => 2022-03-31
+    [allowed_classes] => Array
+        (
+            [0] => W
+            [1] => V
+            [2] => M
+            [3] => F
+            [4] => D
+            [5] => K
+            [6] => G
+            [7] => R
+        )
+
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2022-03-01
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Generated months - Array
+(
+    [count] => 12
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:33] Generated months - Array
+(
+    [months] => Array
+        (
+            [0] => 2021-04
+            [1] => 2021-05
+            [2] => 2021-06
+            [3] => 2021-07
+            [4] => 2021-08
+            [5] => 2021-09
+            [6] => 2021-10
+            [7] => 2021-11
+            [8] => 2021-12
+            [9] => 2022-01
+            [10] => 2022-02
+            [11] => 2022-03
+        )
+
+)
+
+[2026-04-01 13:28:33] Found opening balance in month - Array
+(
+    [month] => 2021-04
+    [item_code] => SCMPL0028274
+)
+
+[2026-04-01 13:28:33] Found first batch date - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+)
+
+[2026-04-01 13:28:33] First batch data result - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:33] First batch data - Array
+(
+    [date] => 2021-04-01
+    [month] => 2021-04
+    [day] => 01
+    [day_num] => 1
+)
+
+[2026-04-01 13:28:33] AJAX get_items called - Array
+(
+    [page] => 1
+    [view] => with_stock
+    [mode] => F
+    [search] => 
+    [first_batch_data] => Array
+        (
+            [date] => 2021-04-01
+            [month] => 2021-04
+            [day] => 01
+            [day_num] => 1
+        )
+
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Date range - Array
+(
+    [start] => 2021-04-01
+    [end] => 2021-04-01
+)
+
+[2026-04-01 13:28:33] generateMonthsInRange: Generated months - Array
+(
+    [count] => 1
+    [months] => Array
+        (
+            [0] => 2021-04
+        )
+
+)
+
+[2026-04-01 13:28:33] AJAX get_items count query result - Array
+(
+    [total] => 73
+    [batch_month] => 2021-04
+    [batch_day] => 01
+)
+
+[2026-04-01 13:28:33] AJAX get_items returning - Array
+(
+    [items_count] => 73
+    [total] => 73
+    [has_more] => 
+)
+
