@@ -482,10 +482,6 @@ foreach ($dates_by_month as $month => $dates) {
             $purchase = (int)($row["purchase_$day"] ?? 0);
             $sales = (int)($row["sales_$day"] ?? 0);
             
-            if ($opening == 0 && $purchase == 0 && $sales == 0) {
-                continue;
-            }
-            
             if (!isset($all_daily_data[$date][$display_type][$size_label])) {
                 $all_daily_data[$date][$display_type][$size_label] = [
                     'opening' => 0,
@@ -514,11 +510,33 @@ foreach ($all_display_categories as $category) {
     $active_sizes_by_category[$category] = [];
 }
 
+// First pass: collect all active sizes per category from the entire date range
+foreach ($all_daily_data as $date => $category_data) {
+    foreach ($category_data as $category => $sizeData) {
+        foreach ($sizeData as $size => $data) {
+            if ($data['opening'] > 0 || $data['purchase'] > 0 || $data['sales'] > 0) {
+                $active_sizes_by_category[$category][$size] = true;
+                $active_categories[$category] = true;
+            }
+        }
+    }
+}
+
+// Second pass: calculate running balances for ALL active sizes on EVERY date
 foreach ($calculation_dates as $index => $date) {
     foreach ($all_display_categories as $category) {
-        if (!isset($all_daily_data[$date][$category])) continue;
+        $category_sizes = array_keys($active_sizes_by_category[$category] ?? []);
+        if (empty($category_sizes)) continue;
         
-        foreach ($all_daily_data[$date][$category] as $size => &$data) {
+        foreach ($category_sizes as $size) {
+            // Get existing data or initialize with zeros
+            $data = $all_daily_data[$date][$category][$size] ?? [
+                'opening' => 0,
+                'purchase' => 0,
+                'sales' => 0,
+                'closing' => 0
+            ];
+            
             // Get opening balance
             if ($index == 0) {
                 $opening = $data['opening'];
@@ -533,15 +551,14 @@ foreach ($calculation_dates as $index => $date) {
             $closing = $opening + $purchase - $sales;
             $closing = max(0, $closing);
             
-            // Update data
-            $data['opening'] = $opening;
-            $data['closing'] = $closing;
-            
-            // Track active sizes AND categories
-            if ($opening > 0 || $purchase > 0 || $sales > 0 || $closing > 0) {
-                $active_sizes_by_category[$category][$size] = true;
-                $active_categories[$category] = true;
+            // Store/ensure row exists in all_daily_data
+            if (!isset($all_daily_data[$date][$category][$size])) {
+                $all_daily_data[$date][$category][$size] = [];
             }
+            $all_daily_data[$date][$category][$size]['opening'] = $opening;
+            $all_daily_data[$date][$category][$size]['purchase'] = $purchase;
+            $all_daily_data[$date][$category][$size]['sales'] = $sales;
+            $all_daily_data[$date][$category][$size]['closing'] = $closing;
             
             // Store for next day
             if (!isset($running_closing[$category])) {
