@@ -153,10 +153,24 @@ function logDistribution($step, $item_code, $data) {
 // STEP 3.1: CUMULATIVE STOCK VALIDATION FUNCTION
 // ============================================================================
 // Validates that cumulative sales up to each date don't exceed closing stock
-// NOTE: Skips validation for historical dates (not current month) since stock data may not be accurate
-function validateCumulativeStock($conn, $item_code, $distribution, $date_array, $comp_id, $daily_stock_table) {
+// NOTE: Respects financial year boundaries:
+// - Current FY: Only validate up to TODAY
+// - Previous FY: Validate up to FY end date
+function validateCumulativeStock($conn, $item_code, $distribution, $date_array, $comp_id, $daily_stock_table, $fin_year_start = null, $fin_year_end = null) {
     $cumulative = 0;
     $current_month = date('Y-m');
+    $today = date('Y-m-d');
+    
+    // Set defaults if not provided
+    if ($fin_year_start === null) {
+        $fin_year_start = $_SESSION['FIN_YEAR_START'] ?? $today;
+    }
+    if ($fin_year_end === null) {
+        $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? $today;
+    }
+    
+    // Determine if we're in current FY
+    $is_current_fy = ($fin_year_start <= $today && $today <= $fin_year_end);
     
     foreach ($date_array as $index => $date) {
         $qty = $distribution[$index] ?? 0;
@@ -166,6 +180,18 @@ function validateCumulativeStock($conn, $item_code, $distribution, $date_array, 
         if ($qty > 0) {
             // Get the date's month
             $month_year = date('Y-m', strtotime($date));
+            
+            // RULE 1: For current FY, skip validation for dates beyond today
+            if ($is_current_fy && $date > $today) {
+                logMessage("SKIP: Date $date is in future (beyond today $today) for current FY", 'DEBUG');
+                continue;
+            }
+            
+            // RULE 2: Skip validation for dates beyond financial year end
+            if ($date > $fin_year_end) {
+                logMessage("SKIP: Date $date is beyond FY end $fin_year_end", 'DEBUG');
+                continue;
+            }
             
             // SKIP validation for historical dates (not current month)
             // Historical stock data may not be accurate, so we trust the UI distribution
@@ -188,29 +214,45 @@ function validateCumulativeStock($conn, $item_code, $distribution, $date_array, 
             
             // Check if table exists
             $check_table = "SHOW TABLES LIKE '$table_to_use'";
-            $table_exists = $conn->query($check_table)->num_rows > 0;
+            $table_result = $conn->query($check_table);
+            $table_exists = $table_result ? $table_result->num_rows > 0 : false;
             
             if (!$table_exists) {
-                // Table doesn't exist, assume 0 stock
+                logMessage("Table $table_to_use does not exist - assuming 0 stock", 'WARNING');
                 $closing_stock = 0;
             } else {
-                $query = "SELECT $closing_column FROM $table_to_use WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                $stmt = $conn->prepare($query);
-                $stmt->bind_param("ss", $month_year, $item_code);
-                $stmt->execute();
-                $result = $stmt->get_result();
+                // Check if column exists
+                $check_column = "SHOW COLUMNS FROM $table_to_use LIKE '$closing_column'";
+                $column_result = $conn->query($check_column);
+                $column_exists = $column_result ? $column_result->num_rows > 0 : false;
                 
-                if ($result->num_rows > 0) {
-                    $row = $result->fetch_assoc();
-                    $closing_stock = $row[$closing_column] ?? 0;
-                } else {
+                if (!$column_exists) {
+                    logMessage("Column $closing_column does not exist - assuming 0 stock", 'WARNING');
                     $closing_stock = 0;
+                } else {
+                    $query = "SELECT $closing_column FROM $table_to_use WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                    $stmt = $conn->prepare($query);
+                    if (!$stmt) {
+                        logMessage("Failed to prepare statement: " . $conn->error, 'ERROR');
+                        continue;
+                    }
+                    $stmt->bind_param("ss", $month_year, $item_code);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    
+                    if ($result->num_rows > 0) {
+                        $row = $result->fetch_assoc();
+                        $closing_stock = (float)($row[$closing_column] ?? 0);
+                    } else {
+                        $closing_stock = 0;
+                    }
+                    $stmt->close();
                 }
-                $stmt->close();
             }
             
             // Check if cumulative sales exceed closing stock
             if ($cumulative > $closing_stock) {
+                logMessage("FAILED: Item $item_code on $date - Cumulative: $cumulative > Max: $closing_stock", 'WARNING');
                 return [
                     'valid' => false,
                     'date' => $date,
@@ -294,6 +336,8 @@ try {
     $comp_id = (int)$_SESSION['CompID'];
     $user_id = (int)$_SESSION['user_id'];
     $fin_year_id = $_SESSION['FIN_YEAR_ID'] ?? '';
+    $fin_year_start = $_SESSION['FIN_YEAR_START'] ?? date('Y-m-d');
+    $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? date('Y-m-d');
     $items = $_POST['items'] ?? [];
     $distributions = $_POST['distribution'] ?? []; // NEW: Get saved distributions
     
@@ -486,7 +530,7 @@ try {
         $daily_sales_data[$item_code] = $full_distribution;
         
         // STEP 3.1: CUMULATIVE VALIDATION
-        $cumul_val = validateCumulativeStock($conn, $item_code, $full_distribution, $date_array, $comp_id, $daily_stock_table);
+        $cumul_val = validateCumulativeStock($conn, $item_code, $full_distribution, $date_array, $comp_id, $daily_stock_table, $fin_year_start, $fin_year_end);
         if (!$cumul_val['valid']) {
             throw new Exception("Stock validation failed for $item_code on {$cumul_val['date']}");
         }

@@ -119331,3 +119331,1431 @@
 [2026-04-01 11:38:57] Deleted 594 purchase details
 [2026-04-01 11:38:57] Deleted 117 purchase headers
 [2026-04-01 11:38:57] VOC_NO renumbered for company 5 after deletion, affected rows: 0
+[2026-04-06 14:25:34] Starting delete operation for company ID: 1
+[2026-04-06 14:25:34] Single delete request for ID: 1
+[2026-04-06 14:25:34] Starting reverse for purchase ID: 1
+[2026-04-06 14:25:34] Purchase found: {
+    "date": "2026-04-02",
+    "tp_no": "3",
+    "is_previous_fy": false
+}
+[2026-04-06 14:25:34] Found 1 items with TotBott quantities: [
+    {
+        "ITEM_CODE": "SCMBR0018182",
+        "QTY": 600
+    }
+]
+[2026-04-06 14:25:34] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018182",
+    "stk_month": "2026-04",
+    "start_day": 2
+}
+[2026-04-06 14:25:34] Start day 2 closing after recalculation: 0
+[2026-04-06 14:25:34] Day 3 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:34] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:34] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:25:35] Cascading completed for all days after 2 in tbldailystock_1
+[2026-04-06 14:25:35] VOC_NO renumbered for company 1 after deletion, affected rows: 0
+[2026-04-06 14:31:40] Starting delete operation for company ID: 1
+[2026-04-06 14:31:40] Starting BATCH reverse for 2 purchases
+[2026-04-06 14:31:40] Aggregated 6 unique item-date combinations
+[2026-04-06 14:31:40] Bulk stock update for SCMBR0018182: -600
+[2026-04-06 14:31:40] Bulk stock update for SCMPL0043258: -480
+[2026-04-06 14:31:40] Bulk stock update for SCMPL0043259: -240
+[2026-04-06 14:31:40] Bulk stock update for SCMPL0042873: -960
+[2026-04-06 14:31:40] Bulk stock update for SCMPL0042872: -500
+[2026-04-06 14:31:40] Bulk stock update for SCMBR0018145: -360
+[2026-04-06 14:31:40] Processing month: 2026-04 in table: tbldailystock_1
+[2026-04-06 14:31:40] Processing item SCMBR0018182 in month 2026-04: {
+    "affected_days": [
+        2
+    ],
+    "total_reduction": 600,
+    "min_day": 2
+}
+[2026-04-06 14:31:40] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018182",
+    "stk_month": "2026-04",
+    "start_day": 2
+}
+[2026-04-06 14:31:40] Start day 2 closing after recalculation: 0
+[2026-04-06 14:31:40] Day 3 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:40] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Cascading completed for all days after 2 in tbldailystock_1
+[2026-04-06 14:31:41] Cascade completed for SCMBR0018182 in 2026-04, last closing: 0
+[2026-04-06 14:31:41] Processing item SCMPL0043258 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 480,
+    "min_day": 3
+}
+[2026-04-06 14:31:41] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0043258",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 14:31:41] Start day 3 closing after recalculation: 0
+[2026-04-06 14:31:41] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:41] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 14:31:42] Cascade completed for SCMPL0043258 in 2026-04, last closing: 0
+[2026-04-06 14:31:42] Processing item SCMPL0043259 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 240,
+    "min_day": 3
+}
+[2026-04-06 14:31:42] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0043259",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 14:31:42] Start day 3 closing after recalculation: 0
+[2026-04-06 14:31:42] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 14:31:42] Cascade completed for SCMPL0043259 in 2026-04, last closing: 0
+[2026-04-06 14:31:42] Processing item SCMPL0042873 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 960,
+    "min_day": 3
+}
+[2026-04-06 14:31:42] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0042873",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 14:31:42] Start day 3 closing after recalculation: 0
+[2026-04-06 14:31:42] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:42] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:43] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 14:31:44] Cascade completed for SCMPL0042873 in 2026-04, last closing: 0
+[2026-04-06 14:31:44] Processing item SCMPL0042872 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 500,
+    "min_day": 3
+}
+[2026-04-06 14:31:44] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0042872",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 14:31:44] Start day 3 closing after recalculation: 0
+[2026-04-06 14:31:44] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 14:31:44] Cascade completed for SCMPL0042872 in 2026-04, last closing: 0
+[2026-04-06 14:31:44] Processing item SCMBR0018145 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 360,
+    "min_day": 3
+}
+[2026-04-06 14:31:44] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018145",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 14:31:44] Start day 3 closing after recalculation: 0
+[2026-04-06 14:31:44] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:44] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:31:45] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 14:31:45] Cascade completed for SCMBR0018145 in 2026-04, last closing: 0
+[2026-04-06 14:31:45] Deleted 9 purchase details
+[2026-04-06 14:31:45] Deleted 2 purchase headers
+[2026-04-06 14:31:45] VOC_NO renumbered for company 1 after deletion, affected rows: 0
+[2026-04-06 14:56:00] Starting delete operation for company ID: 1
+[2026-04-06 14:56:00] Single delete request for ID: 1
+[2026-04-06 14:56:00] Starting reverse for purchase ID: 1
+[2026-04-06 14:56:00] Purchase found: {
+    "date": "2026-04-02",
+    "tp_no": "3",
+    "is_previous_fy": false
+}
+[2026-04-06 14:56:00] Found 1 items with TotBott quantities: [
+    {
+        "ITEM_CODE": "SCMBR0018182",
+        "QTY": 600
+    }
+]
+[2026-04-06 14:56:00] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018182",
+    "stk_month": "2026-04",
+    "start_day": 2
+}
+[2026-04-06 14:56:00] Start day 2 closing after recalculation: 0
+[2026-04-06 14:56:00] Day 3 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:00] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:00] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:00] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:00] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:00] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 14:56:01] Cascading completed for all days after 2 in tbldailystock_1
+[2026-04-06 14:56:01] VOC_NO renumbered for company 1 after deletion, affected rows: 0
+[2026-04-06 15:03:01] Starting delete operation for company ID: 1
+[2026-04-06 15:03:01] Starting BATCH reverse for 2 purchases
+[2026-04-06 15:03:01] Aggregated 6 unique item-date combinations
+[2026-04-06 15:03:01] Bulk stock update for SCMBR0018182: -600
+[2026-04-06 15:03:01] Bulk stock update for SCMPL0043258: -480
+[2026-04-06 15:03:01] Bulk stock update for SCMPL0043259: -240
+[2026-04-06 15:03:01] Bulk stock update for SCMPL0042873: -960
+[2026-04-06 15:03:01] Bulk stock update for SCMPL0042872: -500
+[2026-04-06 15:03:01] Bulk stock update for SCMBR0018145: -360
+[2026-04-06 15:03:01] Processing month: 2026-04 in table: tbldailystock_1
+[2026-04-06 15:03:01] Processing item SCMBR0018182 in month 2026-04: {
+    "affected_days": [
+        2
+    ],
+    "total_reduction": 600,
+    "min_day": 2
+}
+[2026-04-06 15:03:01] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018182",
+    "stk_month": "2026-04",
+    "start_day": 2
+}
+[2026-04-06 15:03:01] Start day 2 closing after recalculation: 0
+[2026-04-06 15:03:01] Day 3 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:01] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Cascading completed for all days after 2 in tbldailystock_1
+[2026-04-06 15:03:02] Cascade completed for SCMBR0018182 in 2026-04, last closing: 0
+[2026-04-06 15:03:02] Processing item SCMPL0043258 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 480,
+    "min_day": 3
+}
+[2026-04-06 15:03:02] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0043258",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:03:02] Start day 3 closing after recalculation: 0
+[2026-04-06 15:03:02] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:02] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:03:03] Cascade completed for SCMPL0043258 in 2026-04, last closing: 0
+[2026-04-06 15:03:03] Processing item SCMPL0043259 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 240,
+    "min_day": 3
+}
+[2026-04-06 15:03:03] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0043259",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:03:03] Start day 3 closing after recalculation: 0
+[2026-04-06 15:03:03] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:03] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:03:04] Cascade completed for SCMPL0043259 in 2026-04, last closing: 0
+[2026-04-06 15:03:04] Processing item SCMPL0042873 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 960,
+    "min_day": 3
+}
+[2026-04-06 15:03:04] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0042873",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:03:04] Start day 3 closing after recalculation: 0
+[2026-04-06 15:03:04] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:04] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:03:05] Cascade completed for SCMPL0042873 in 2026-04, last closing: 0
+[2026-04-06 15:03:05] Processing item SCMPL0042872 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 500,
+    "min_day": 3
+}
+[2026-04-06 15:03:05] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0042872",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:03:05] Start day 3 closing after recalculation: 0
+[2026-04-06 15:03:05] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:05] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:03:06] Cascade completed for SCMPL0042872 in 2026-04, last closing: 0
+[2026-04-06 15:03:06] Processing item SCMBR0018145 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 360,
+    "min_day": 3
+}
+[2026-04-06 15:03:06] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018145",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:03:06] Start day 3 closing after recalculation: 0
+[2026-04-06 15:03:06] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:03:06] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:03:06] Cascade completed for SCMBR0018145 in 2026-04, last closing: 0
+[2026-04-06 15:03:06] Deleted 9 purchase details
+[2026-04-06 15:03:06] Deleted 2 purchase headers
+[2026-04-06 15:03:06] VOC_NO renumbered for company 1 after deletion, affected rows: 0
+[2026-04-06 15:26:42] Starting delete operation for company ID: 1
+[2026-04-06 15:26:42] Starting BATCH reverse for 1 purchases
+[2026-04-06 15:26:42] Aggregated 5 unique item-date combinations
+[2026-04-06 15:26:42] Bulk stock update for SCMBR0018145: -360
+[2026-04-06 15:26:42] Bulk stock update for SCMPL0042872: -500
+[2026-04-06 15:26:42] Bulk stock update for SCMPL0042873: -960
+[2026-04-06 15:26:42] Bulk stock update for SCMPL0043259: -240
+[2026-04-06 15:26:42] Bulk stock update for SCMPL0043258: -480
+[2026-04-06 15:26:42] Processing month: 2026-04 in table: tbldailystock_1
+[2026-04-06 15:26:42] Processing item SCMBR0018145 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 360,
+    "min_day": 3
+}
+[2026-04-06 15:26:42] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018145",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:26:42] Start day 3 closing after recalculation: 0
+[2026-04-06 15:26:42] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:42] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:42] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:42] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:42] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:42] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:26:43] Cascade completed for SCMBR0018145 in 2026-04, last closing: 0
+[2026-04-06 15:26:43] Processing item SCMPL0042872 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 500,
+    "min_day": 3
+}
+[2026-04-06 15:26:43] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0042872",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:26:43] Start day 3 closing after recalculation: 0
+[2026-04-06 15:26:43] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:43] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:26:44] Cascade completed for SCMPL0042872 in 2026-04, last closing: 0
+[2026-04-06 15:26:44] Processing item SCMPL0042873 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 960,
+    "min_day": 3
+}
+[2026-04-06 15:26:44] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0042873",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:26:44] Start day 3 closing after recalculation: 0
+[2026-04-06 15:26:44] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:44] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:26:45] Cascade completed for SCMPL0042873 in 2026-04, last closing: 0
+[2026-04-06 15:26:45] Processing item SCMPL0043259 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 240,
+    "min_day": 3
+}
+[2026-04-06 15:26:45] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0043259",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:26:45] Start day 3 closing after recalculation: 0
+[2026-04-06 15:26:45] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:26:45] Cascade completed for SCMPL0043259 in 2026-04, last closing: 0
+[2026-04-06 15:26:45] Processing item SCMPL0043258 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 480,
+    "min_day": 3
+}
+[2026-04-06 15:26:45] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0043258",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 15:26:45] Start day 3 closing after recalculation: 0
+[2026-04-06 15:26:45] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:45] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 15:26:46] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 15:26:46] Cascade completed for SCMPL0043258 in 2026-04, last closing: 0
+[2026-04-06 15:26:46] Deleted 8 purchase details
+[2026-04-06 15:26:46] Deleted 1 purchase headers
+[2026-04-06 15:26:46] VOC_NO renumbered for company 1 after deletion, affected rows: 0
+[2026-04-06 17:28:18] Starting delete operation for company ID: 1
+[2026-04-06 17:28:18] Starting BATCH reverse for 2 purchases
+[2026-04-06 17:28:19] Aggregated 12 unique item-date combinations
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0033617: -48
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0033618: -96
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0033620: -96
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0033621: -96
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0033614: -48
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0033615: -96
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0010111: -72
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0010096: -144
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0010108: -36
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0010107: -72
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0010087: -960
+[2026-04-06 17:28:19] Bulk stock update for SCMPL0010075: -1000
+[2026-04-06 17:28:19] Processing month: 2026-04 in table: tbldailystock_1
+[2026-04-06 17:28:19] Processing item SCMPL0033617 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 48,
+    "min_day": 3
+}
+[2026-04-06 17:28:19] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0033617",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:19] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:19] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:19] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:20] Cascade completed for SCMPL0033617 in 2026-04, last closing: 0
+[2026-04-06 17:28:20] Processing item SCMPL0033618 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 96,
+    "min_day": 3
+}
+[2026-04-06 17:28:20] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0033618",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:20] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:20] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:20] Cascade completed for SCMPL0033618 in 2026-04, last closing: 0
+[2026-04-06 17:28:20] Processing item SCMPL0033620 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 96,
+    "min_day": 3
+}
+[2026-04-06 17:28:20] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0033620",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:20] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:20] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:20] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:21] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:22] Cascade completed for SCMPL0033620 in 2026-04, last closing: 0
+[2026-04-06 17:28:22] Processing item SCMPL0033621 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 96,
+    "min_day": 3
+}
+[2026-04-06 17:28:22] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0033621",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:22] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:22] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:22] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:23] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:24] Cascade completed for SCMPL0033621 in 2026-04, last closing: 0
+[2026-04-06 17:28:24] Processing item SCMPL0033614 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 48,
+    "min_day": 3
+}
+[2026-04-06 17:28:24] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0033614",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:24] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:24] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:24] Cascade completed for SCMPL0033614 in 2026-04, last closing: 0
+[2026-04-06 17:28:24] Processing item SCMPL0033615 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 96,
+    "min_day": 3
+}
+[2026-04-06 17:28:24] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0033615",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:24] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:24] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:24] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:25] Cascade completed for SCMPL0033615 in 2026-04, last closing: 0
+[2026-04-06 17:28:25] Processing item SCMPL0010111 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 72,
+    "min_day": 3
+}
+[2026-04-06 17:28:25] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0010111",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:25] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:25] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:25] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:26] Cascade completed for SCMPL0010111 in 2026-04, last closing: 0
+[2026-04-06 17:28:26] Processing item SCMPL0010096 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 144,
+    "min_day": 3
+}
+[2026-04-06 17:28:26] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0010096",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:26] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:26] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:26] Cascade completed for SCMPL0010096 in 2026-04, last closing: 0
+[2026-04-06 17:28:26] Processing item SCMPL0010108 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 36,
+    "min_day": 3
+}
+[2026-04-06 17:28:26] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0010108",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:26] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:26] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:26] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:27] Cascade completed for SCMPL0010108 in 2026-04, last closing: 0
+[2026-04-06 17:28:27] Processing item SCMPL0010107 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 72,
+    "min_day": 3
+}
+[2026-04-06 17:28:27] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0010107",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:27] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:27] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:27] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:28] Cascade completed for SCMPL0010107 in 2026-04, last closing: 0
+[2026-04-06 17:28:28] Processing item SCMPL0010087 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 960,
+    "min_day": 3
+}
+[2026-04-06 17:28:28] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0010087",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:28] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:28] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:28] Cascade completed for SCMPL0010087 in 2026-04, last closing: 0
+[2026-04-06 17:28:28] Processing item SCMPL0010075 in month 2026-04: {
+    "affected_days": [
+        3
+    ],
+    "total_reduction": 1000,
+    "min_day": 3
+}
+[2026-04-06 17:28:28] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMPL0010075",
+    "stk_month": "2026-04",
+    "start_day": 3
+}
+[2026-04-06 17:28:28] Start day 3 closing after recalculation: 0
+[2026-04-06 17:28:28] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:28] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 17:28:29] Cascading completed for all days after 3 in tbldailystock_1
+[2026-04-06 17:28:29] Cascade completed for SCMPL0010075 in 2026-04, last closing: 0
+[2026-04-06 17:28:29] Deleted 12 purchase details
+[2026-04-06 17:28:29] Deleted 2 purchase headers
+[2026-04-06 17:28:29] VOC_NO renumbered for company 1 after deletion, affected rows: 0
+[2026-04-06 19:46:47] Starting delete operation for company ID: 1
+[2026-04-06 19:46:47] Starting BATCH reverse for 1 purchases
+[2026-04-06 19:46:47] Aggregated 1 unique item-date combinations
+[2026-04-06 19:46:47] Bulk stock update for SCMBR0018182: -600
+[2026-04-06 19:46:48] Processing month: 2026-04 in table: tbldailystock_1
+[2026-04-06 19:46:48] Processing item SCMBR0018182 in month 2026-04: {
+    "affected_days": [
+        2
+    ],
+    "total_reduction": 600,
+    "min_day": 2
+}
+[2026-04-06 19:46:48] Cascading stock in table: tbldailystock_1: {
+    "item_code": "SCMBR0018182",
+    "stk_month": "2026-04",
+    "start_day": 2
+}
+[2026-04-06 19:46:48] Start day 2 closing after recalculation: 0
+[2026-04-06 19:46:48] Day 3 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 4 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 5 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 6 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 7 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 8 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 9 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 10 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 11 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 12 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 13 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 14 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 15 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 16 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 17 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 18 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 19 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 20 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 21 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 22 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 23 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 24 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 25 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 26 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 27 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 28 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 29 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Day 30 updated - opening: 0, purchase: 0, sales: 0, new closing: 0
+[2026-04-06 19:46:48] Cascading completed for all days after 2 in tbldailystock_1
+[2026-04-06 19:46:48] Cascade completed for SCMBR0018182 in 2026-04, last closing: 0
+[2026-04-06 19:46:48] Deleted 1 purchase details
+[2026-04-06 19:46:48] Deleted 1 purchase headers
+[2026-04-06 19:46:48] VOC_NO renumbered for company 1 after deletion, affected rows: 0

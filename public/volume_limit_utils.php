@@ -45,9 +45,31 @@ function getDailyStockTableForDate($conn, $comp_id, $date) {
 /**
  * Check if stock is available for an item on a specific date
  * Returns true if closing stock > 0, false otherwise
+ * Respects financial year boundaries:
+ * - Current FY: Cannot sell on future dates
+ * - Previous FY: Cannot sell beyond FY end date
  */
 if (!function_exists('isStockAvailable')) {
-function isStockAvailable($conn, $item_code, $date, $comp_id) {
+function isStockAvailable($conn, $item_code, $date, $comp_id, $fin_year_end = null) {
+    $today = date('Y-m-d');
+    
+    // Set default FY end if not provided
+    if ($fin_year_end === null) {
+        $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? $today;
+    }
+    
+    // RULE: Cannot sell on future dates (current FY)
+    if ($date > $today) {
+        error_log("isStockAvailable: Date $date is in the future - returning false");
+        return false;
+    }
+    
+    // RULE: Cannot sell beyond financial year end (previous FY)
+    if ($date > $fin_year_end) {
+        error_log("isStockAvailable: Date $date beyond FY end $fin_year_end - returning false");
+        return false;
+    }
+    
     $table_name = getDailyStockTableForDate($conn, $comp_id, $date);
     $month_year = date('Y-m', strtotime($date));
     $day_num = sprintf('%02d', date('d', strtotime($date)));
@@ -91,9 +113,27 @@ function isStockAvailable($conn, $item_code, $date, $comp_id) {
 
 /**
  * Get closing stock for an item on a specific date
+ * Respects financial year boundaries
  */
 if (!function_exists('getClosingStockForDate')) {
-function getClosingStockForDate($conn, $item_code, $date, $comp_id) {
+function getClosingStockForDate($conn, $item_code, $date, $comp_id, $fin_year_end = null) {
+    $today = date('Y-m-d');
+    
+    // Set default FY end if not provided
+    if ($fin_year_end === null) {
+        $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? $today;
+    }
+    
+    // Cannot get stock for future dates
+    if ($date > $today) {
+        return 0;
+    }
+    
+    // Cannot get stock beyond FY end
+    if ($date > $fin_year_end) {
+        return 0;
+    }
+    
     $table_name = getDailyStockTableForDate($conn, $comp_id, $date);
     $month_year = date('Y-m', strtotime($date));
     $day_num = sprintf('%02d', date('d', strtotime($date)));

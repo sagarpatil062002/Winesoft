@@ -5554,3 +5554,603 @@
         }
     }
 }
+[06-Apr-2026 13:06:16 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[06-Apr-2026 13:06:16 Europe/Berlin] Item: Haywards 2000 Premium Strong Beer, Code: SCMBR0018182, Class: 'F', Details: 'Haywards 2000 Premium Strong Beer', Details2: '500 ML (CAN)'
+[06-Apr-2026 13:06:16 Europe/Berlin] Using TotBott column: 600
+[06-Apr-2026 13:06:16 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 500, Column: 500 ML, Qty: 600, Class: F
+[06-Apr-2026 13:06:16 Europe/Berlin] Added to TP 3, Category FERMENTED BEER, Size 500 ML: 600
+[06-Apr-2026 13:06:16 Europe/Berlin] Processed 1 items into 1 TP numbers
+[06-Apr-2026 13:06:16 Europe/Berlin] Unique TP Numbers found: 3
+[06-Apr-2026 13:06:16 Europe/Berlin] Final Summary Structure: {
+    "3": {
+        "tp_no": "3",
+        "tp_details": {
+            "purchase_date": "2026-04-02",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 600,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[06-Apr-2026 13:06:21 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[06-Apr-2026 13:06:21 Europe/Berlin] Item: Haywards 2000 Premium Strong Beer, Code: SCMBR0018182, Class: 'F', Details: 'Haywards 2000 Premium Strong Beer', Details2: '500 ML (CAN)'
+[06-Apr-2026 13:06:21 Europe/Berlin] Using TotBott column: 600
+[06-Apr-2026 13:06:21 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 500, Column: 500 ML, Qty: 600, Class: F
+[06-Apr-2026 13:06:21 Europe/Berlin] Added to TP 3, Category FERMENTED BEER, Size 500 ML: 600
+[06-Apr-2026 13:06:21 Europe/Berlin] Processed 1 items into 1 TP numbers
+[06-Apr-2026 13:06:21 Europe/Berlin] Unique TP Numbers found: 3
+[06-Apr-2026 13:06:21 Europe/Berlin] Final Summary Structure: {
+    "3": {
+        "tp_no": "3",
+        "tp_details": {
+            "purchase_date": "2026-04-02",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 600,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[06-Apr-2026 13:07:10 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: London Pilsner Premium Strong Beer, Code: SCMBR0018145, Class: 'F', Details: 'London Pilsner Premium Strong Beer', Details2: '650 ML'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 360
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 360, Class: F
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category FERMENTED BEER, Size 650 ML: 360
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043258, Class: 'D', Details: 'HARSH BRANDY', Details2: '90 ML-(96)'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 48
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 48, Class: D
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 48
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043258, Class: 'D', Details: 'HARSH BRANDY', Details2: '90 ML-(96)'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 240
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 240, Class: D
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 240
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: MASTERS DELIGHT PREMIUM WHISKY, Code: SCMPL0042872, Class: 'W', Details: 'MASTERS DELIGHT PREMIUM WHISKY', Details2: '90 ML (Pet)-100'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 200
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: W
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 200
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043258, Class: 'D', Details: 'HARSH BRANDY', Details2: '90 ML-(96)'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 192
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: D
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 192
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: MASTERS DELIGHT PREMIUM WHISKY, Code: SCMPL0042872, Class: 'W', Details: 'MASTERS DELIGHT PREMIUM WHISKY', Details2: '90 ML (Pet)-100'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 300
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 300, Class: W
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 300
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043259, Class: 'D', Details: 'HARSH BRANDY', Details2: '180 ML'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 240
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: D
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 180 ML: 240
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: MASTERS DELIGHT PREMIUM WHISKY, Code: SCMPL0042873, Class: 'W', Details: 'MASTERS DELIGHT PREMIUM WHISKY', Details2: '180 ML (Pet)'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 960
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 960, Class: W
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 180 ML: 960
+[06-Apr-2026 13:07:11 Europe/Berlin] Item: Haywards 2000 Premium Strong Beer, Code: SCMBR0018182, Class: 'F', Details: 'Haywards 2000 Premium Strong Beer', Details2: '500 ML (CAN)'
+[06-Apr-2026 13:07:11 Europe/Berlin] Using TotBott column: 600
+[06-Apr-2026 13:07:11 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 500, Column: 500 ML, Qty: 600, Class: F
+[06-Apr-2026 13:07:11 Europe/Berlin] Added to TP 3, Category FERMENTED BEER, Size 500 ML: 600
+[06-Apr-2026 13:07:11 Europe/Berlin] Processed 9 items into 2 TP numbers
+[06-Apr-2026 13:07:11 Europe/Berlin] Unique TP Numbers found: 1, 3
+[06-Apr-2026 13:07:11 Europe/Berlin] Final Summary Structure: {
+    "1": {
+        "tp_no": "1",
+        "tp_details": {
+            "purchase_date": "2026-04-03",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1200,
+                "170 ML": 0,
+                "90 ML": 980,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 360,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "3": {
+        "tp_no": "3",
+        "tp_details": {
+            "purchase_date": "2026-04-02",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 600,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}
+[06-Apr-2026 14:28:08 Europe/Berlin] Executing query: 
+        SELECT 
+            pd.ItemCode,
+            pd.Size,
+            pd.Cases,
+            pd.Bottles,
+            pd.BottlesPerCase,
+            pd.ItemName,
+            pd.TotBott,
+            p.ID as PurchaseID,
+            p.DATE as PurchaseDate,
+            p.PUR_FLAG,
+            COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) as TP_NO,
+            COALESCE(NULLIF(TRIM(im.CLASS), ''), 'UNKNOWN') as ItemClass,
+            im.DETAILS as ItemDetails,
+            im.DETAILS2 as ItemDetails2
+        FROM tblpurchasedetails pd
+        INNER JOIN tblpurchases p ON pd.PurchaseID = p.ID
+        LEFT JOIN tblitemmaster im ON TRIM(pd.ItemCode) = TRIM(im.CODE)
+        WHERE p.CompID = ?
+        AND p.DATE BETWEEN ? AND ?
+        AND (p.TPNO IS NOT NULL OR p.AUTO_TPNO IS NOT NULL)
+        AND (p.TPNO != '' OR p.AUTO_TPNO != '')
+     AND p.PUR_FLAG IN ('F', 'T', 'P', 'C') ORDER BY CAST(COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO) AS UNSIGNED), COALESCE(NULLIF(TRIM(p.TPNO), ''), p.AUTO_TPNO)
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043258, Class: 'D', Details: 'HARSH BRANDY', Details2: '90 ML-(96)'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 240
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 240, Class: D
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 240
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: MASTERS DELIGHT PREMIUM WHISKY, Code: SCMPL0042872, Class: 'W', Details: 'MASTERS DELIGHT PREMIUM WHISKY', Details2: '90 ML (Pet)-100'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 200
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 200, Class: W
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 200
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043258, Class: 'D', Details: 'HARSH BRANDY', Details2: '90 ML-(96)'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 192
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 192, Class: D
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 192
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: MASTERS DELIGHT PREMIUM WHISKY, Code: SCMPL0042872, Class: 'W', Details: 'MASTERS DELIGHT PREMIUM WHISKY', Details2: '90 ML (Pet)-100'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 300
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 300, Class: W
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 300
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043259, Class: 'D', Details: 'HARSH BRANDY', Details2: '180 ML'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 240
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 240, Class: D
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 180 ML: 240
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: MASTERS DELIGHT PREMIUM WHISKY, Code: SCMPL0042873, Class: 'W', Details: 'MASTERS DELIGHT PREMIUM WHISKY', Details2: '180 ML (Pet)'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 960
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: SPIRITS, Volume: 180, Column: 180 ML, Qty: 960, Class: W
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 180 ML: 960
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: London Pilsner Premium Strong Beer, Code: SCMBR0018145, Class: 'F', Details: 'London Pilsner Premium Strong Beer', Details2: '650 ML'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 360
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 650, Column: 650 ML, Qty: 360, Class: F
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category FERMENTED BEER, Size 650 ML: 360
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: HARSH BRANDY, Code: SCMPL0043258, Class: 'D', Details: 'HARSH BRANDY', Details2: '90 ML-(96)'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 48
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: SPIRITS, Volume: 90, Column: 90 ML, Qty: 48, Class: D
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 1, Category SPIRITS, Size 90 ML: 48
+[06-Apr-2026 14:28:08 Europe/Berlin] Item: Haywards 2000 Premium Strong Beer, Code: SCMBR0018182, Class: 'F', Details: 'Haywards 2000 Premium Strong Beer', Details2: '500 ML (CAN)'
+[06-Apr-2026 14:28:08 Europe/Berlin] Using TotBott column: 600
+[06-Apr-2026 14:28:08 Europe/Berlin] Categorized as: FERMENTED BEER, Volume: 500, Column: 500 ML, Qty: 600, Class: F
+[06-Apr-2026 14:28:08 Europe/Berlin] Added to TP 3, Category FERMENTED BEER, Size 500 ML: 600
+[06-Apr-2026 14:28:08 Europe/Berlin] Processed 9 items into 2 TP numbers
+[06-Apr-2026 14:28:08 Europe/Berlin] Unique TP Numbers found: 1, 3
+[06-Apr-2026 14:28:08 Europe/Berlin] Final Summary Structure: {
+    "1": {
+        "tp_no": "1",
+        "tp_details": {
+            "purchase_date": "2026-04-03",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 1200,
+                "170 ML": 0,
+                "90 ML": 980,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 360,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    },
+    "3": {
+        "tp_no": "3",
+        "tp_details": {
+            "purchase_date": "2026-04-02",
+            "pur_flag": "T"
+        },
+        "categories": {
+            "SPIRITS": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "700 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "355 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "200 ML": 0,
+                "180 ML": 0,
+                "170 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0,
+                "50 ML": 0
+            },
+            "WINE": {
+                ">1L": 0,
+                "1L W": 0,
+                "750 W": 0,
+                "700 W": 0,
+                "500 W": 0,
+                "375 W": 0,
+                "330 W": 0,
+                "250 W": 0,
+                "180 W": 0,
+                "100 W": 0
+            },
+            "FERMENTED BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 600,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            },
+            "MILD BEER": {
+                ">1L": 0,
+                "1L": 0,
+                "750 ML": 0,
+                "650 ML": 0,
+                "500 ML": 0,
+                "375 ML": 0,
+                "330 ML": 0,
+                "275 ML": 0,
+                "250 ML": 0,
+                "180 ML": 0,
+                "90 ML": 0,
+                "60 ML": 0
+            }
+        }
+    }
+}

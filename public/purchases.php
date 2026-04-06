@@ -77,6 +77,41 @@ include_once "stock_functions.php";
 include_once "components/financial_year.php";
 debugLog("Database connection included");
 
+// ============================================================================
+// FIX: Local financial year helper functions (defined here to avoid external dependencies)
+// These override any broken functions from included files
+// ============================================================================
+
+// Check if a date is in previous financial year
+if (!function_exists('isPreviousFinancialYear')) {
+    function isPreviousFinancialYear($date) {
+        if (!isset($_SESSION['FIN_YEAR_START'])) {
+            debugLog("isPreviousFinancialYear: FIN_YEAR_START not set, returning false");
+            return false;
+        }
+        
+        $purchase_timestamp = strtotime($date);
+        $fy_start_timestamp = strtotime($_SESSION['FIN_YEAR_START']);
+        
+        $result = $purchase_timestamp < $fy_start_timestamp;
+        debugLog("isPreviousFinancialYear: date=$date, result=" . ($result ? "true" : "false"));
+        return $result;
+    }
+}
+
+// Get financial year end date
+if (!function_exists('getFinancialYearEndDate')) {
+    function getFinancialYearEndDate($date) {
+        if (!isset($_SESSION['FIN_YEAR_END'])) {
+            debugLog("getFinancialYearEndDate: FIN_YEAR_END not set, using today");
+            return date('Y-m-d');
+        }
+        
+        debugLog("getFinancialYearEndDate: returning " . $_SESSION['FIN_YEAR_END']);
+        return $_SESSION['FIN_YEAR_END'];
+    }
+}
+
 // Extract financial year variables from session
 $fin_year_start = $_SESSION['FIN_YEAR_START'] ?? null;
 $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? null;
@@ -320,62 +355,108 @@ function updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $pu
     return $result;
 }
 
-// Function to update current month stock with proper cascading updates
+// ============================================================================
+// FIXED: updateCurrentMonthStock - Cascades properly to current date
+// ============================================================================
 function updateCurrentMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
     $dayOfMonth = date('j', strtotime($purchaseDate));
     $monthYear = date('Y-m', strtotime($purchaseDate));
     $dailyStockTable = "tbldailystock_" . $comp_id;
-    
+    $currentDay = date('j');
+    $today = date('Y-m-d');
+
     $purchaseColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
     $saleColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_SALES";
     $openingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_OPEN";
     $closingColumn = "DAY_" . str_pad($dayOfMonth, 2, '0', STR_PAD_LEFT) . "_CLOSING";
-    
+
     debugLog("Updating current month stock", [
         'table' => $dailyStockTable,
         'monthYear' => $monthYear,
         'itemCode' => $itemCode,
         'dayOfMonth' => $dayOfMonth,
+        'currentDay' => $currentDay,
         'totalBottles' => $totalBottles
     ]);
-    
-    // Check if daily stock record exists for this month and item
-    $checkDailyStockQuery = "SELECT COUNT(*) as count FROM $dailyStockTable 
-                            WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-    $checkStmt = $conn->prepare($checkDailyStockQuery);
+
+    // FIRST: Ensure record exists for this month and item
+    $checkQuery = "SELECT COUNT(*) as count FROM $dailyStockTable WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $checkStmt = $conn->prepare($checkQuery);
     $checkStmt->bind_param("ss", $monthYear, $itemCode);
     $checkStmt->execute();
     $result = $checkStmt->get_result();
-    $row = $result->fetch_assoc();
+    $recordExists = $result->fetch_assoc()['count'] > 0;
     $checkStmt->close();
-    
-    if ($row['count'] > 0) {
-        // Update existing record with complete calculation including sales
-        $updateDailyStockQuery = "UPDATE $dailyStockTable 
-                                 SET $purchaseColumn = $purchaseColumn + ?,
-                                     $closingColumn = $openingColumn + $purchaseColumn - $saleColumn
-                                 WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-        $dailyStmt = $conn->prepare($updateDailyStockQuery);
-        $dailyStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
-        $result = $dailyStmt->execute();
-        $dailyStmt->close();
-        
-        if ($result) {
-            // Now update all subsequent days' opening and closing values with cascading effect
-            updateSubsequentDaysInTable($conn, $dailyStockTable, $monthYear, $itemCode, $dayOfMonth);
+
+    if (!$recordExists) {
+        $daysInMonth = date('t', strtotime($purchaseDate));
+        $insertColumns = "STK_MONTH, ITEM_CODE, LIQ_FLAG";
+        $insertValues = "?, ?, 'F'";
+        $params = [$monthYear, $itemCode];
+        $types = "ss";
+
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $dayPadded = str_pad($day, 2, '0', STR_PAD_LEFT);
+            $insertColumns .= ", DAY_{$dayPadded}_OPEN, DAY_{$dayPadded}_PURCHASE, DAY_{$dayPadded}_SALES, DAY_{$dayPadded}_CLOSING";
+            $insertValues .= ", 0, 0, 0, 0";
         }
-    } else {
-        // For new record, opening is 0, so closing = purchase (no sales initially)
-        $insertDailyStockQuery = "INSERT INTO $dailyStockTable 
-                                 (STK_MONTH, ITEM_CODE, LIQ_FLAG, $openingColumn, $purchaseColumn, $saleColumn, $closingColumn) 
-                                 VALUES (?, ?, 'F', 0, ?, 0, ?)";
-        $dailyStmt = $conn->prepare($insertDailyStockQuery);
-        $dailyStmt->bind_param("ssii", $monthYear, $itemCode, $totalBottles, $totalBottles);
-        $result = $dailyStmt->execute();
-        $dailyStmt->close();
+
+        $insertQuery = "INSERT INTO $dailyStockTable ($insertColumns) VALUES ($insertValues)";
+        $insertStmt = $conn->prepare($insertQuery);
+        $insertStmt->bind_param($types, ...$params);
+        $insertStmt->execute();
+        $insertStmt->close();
+        debugLog("Created new record for $itemCode");
     }
-    
-    return $result;
+
+    // SECOND: Update purchase amount for the specific day
+    $updateQuery = "UPDATE $dailyStockTable
+                   SET $purchaseColumn = $purchaseColumn + ?
+                   WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $updateStmt = $conn->prepare($updateQuery);
+    $updateStmt->bind_param("iss", $totalBottles, $monthYear, $itemCode);
+    $updateStmt->execute();
+    $updateStmt->close();
+
+    // THIRD: Recalculate from the purchase day to current day
+    // Get days in month
+    $daysInMonth = date('t', strtotime($purchaseDate));
+    $cascadeUntil = min($currentDay, $daysInMonth);
+
+    debugLog("Cascading from day $dayOfMonth to $cascadeUntil");
+
+    // First, recalculate the purchase day's closing
+    $recalcDayQuery = "UPDATE $dailyStockTable
+                      SET $closingColumn = $openingColumn + $purchaseColumn - $saleColumn
+                      WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+    $recalcStmt = $conn->prepare($recalcDayQuery);
+    $recalcStmt->bind_param("ss", $monthYear, $itemCode);
+    $recalcStmt->execute();
+    $recalcStmt->close();
+
+    // Then cascade through all subsequent days up to current day
+    for ($day = $dayOfMonth + 1; $day <= $cascadeUntil; $day++) {
+        $prevDay = $day - 1;
+        $prevDayClosingCol = "DAY_" . str_pad($prevDay, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+        $currentDayOpeningCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_OPEN";
+        $currentDayPurchaseCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_PURCHASE";
+        $currentDaySalesCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_SALES";
+        $currentDayClosingCol = "DAY_" . str_pad($day, 2, '0', STR_PAD_LEFT) . "_CLOSING";
+
+        $cascadeQuery = "UPDATE $dailyStockTable
+                        SET $currentDayOpeningCol = $prevDayClosingCol,
+                            $currentDayClosingCol = $prevDayClosingCol + $currentDayPurchaseCol - $currentDaySalesCol
+                        WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+
+        $cascadeStmt = $conn->prepare($cascadeQuery);
+        $cascadeStmt->bind_param("ss", $monthYear, $itemCode);
+        $cascadeStmt->execute();
+        $cascadeStmt->close();
+
+        debugLog("Cascaded day $day: opening = previous day closing");
+    }
+
+    debugLog("Current month stock update completed, cascaded to day $cascadeUntil");
 }
 
 // Universal function to update subsequent days' opening and closing values with cascading effect
@@ -1148,24 +1229,22 @@ function cascadeToFinancialYearEnd($conn, $comp_id, $item_code, $purchase_date, 
     debugLog("Cascading completed to FY end: " . $fy_end_date);
 }
 
-// Function to update stock for purchases in previous financial years
-function updatePreviousYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate, $fin_year_id) {
+function updatePreviousYearStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate) {
     debugLog("Updating previous year stock", [
         'item_code' => $itemCode,
         'total_bottles' => $totalBottles,
-        'purchase_date' => $purchaseDate,
-        'fin_year_id' => $fin_year_id
+        'purchase_date' => $purchaseDate
     ]);
-    
+
     // Update archived month stock
     updateArchivedMonthStock($conn, $comp_id, $itemCode, $totalBottles, $purchaseDate);
-    
-    // Cascade through all remaining months until FY end (March)
-    // This handles all months from purchase month+1 through March of that FY
-    cascadeToFinancialYearEnd($conn, $comp_id, $itemCode, $purchaseDate, $totalBottles);
-    
-    // Update tblitem_stock with FULL item code
-    updateItemStock($conn, $itemCode, $totalBottles, $comp_id, $fin_year_id);
+
+    // Cascade through all remaining months until current date
+    // This ensures stock flows correctly to present day
+    continueCascadingToCurrentMonth($conn, $comp_id, $itemCode, $purchaseDate);
+
+    // Update tblitem_stock
+    updateItemStock($conn, $itemCode, $totalBottles, $comp_id);
 }
 
 // Function to update stock for purchases in current financial year
@@ -1580,6 +1659,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=<?=time()?>">
 <link rel="stylesheet" href="css/navbar.css?v=<?=time()?>">
+<?php 
+// FIX: Safely handle the autoApplyConstraints method if it exists
+// This prevents fatal errors if the method doesn't exist in financial_year.php
+if (class_exists('FinancialYearModule') && method_exists('FinancialYearModule', 'autoApplyConstraints')) {
+    FinancialYearModule::autoApplyConstraints(); 
+} else {
+    // Fallback: Add basic date constraints via JavaScript
+    if (isset($_SESSION['FIN_YEAR_START']) && isset($_SESSION['FIN_YEAR_END'])) {
+        $fyStart = $_SESSION['FIN_YEAR_START'];
+        $fyEnd = $_SESSION['FIN_YEAR_END'];
+        echo "<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var dateInputs = document.querySelectorAll('input[type=\"date\"]');
+            var fyStart = '$fyStart';
+            var fyEnd = '$fyEnd';
+            dateInputs.forEach(function(input) {
+                if (!input.hasAttribute('min')) input.setAttribute('min', fyStart);
+                if (!input.hasAttribute('max')) input.setAttribute('max', fyEnd);
+            });
+        });
+        </script>";
+    }
+}
+?>
 <style>
 .table-container {
     overflow-x: auto;
@@ -2988,7 +3091,7 @@ function addRow(item){
   $(document).on('click','.remove-item', function(){
     $(this).closest('tr').remove();
     if($('.item-row').length===0){
-      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
+      $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</tr>');
       $('#totalAmount').text('0.00'); 
       $('input[name="basic_amt"]').val('0.00'); 
       $('input[name="tamt"]').val('0.00');
@@ -3083,7 +3186,7 @@ function addRow(item){
   // Initialize
   initializeSizeTable();
   if($('.item-row').length===0){
-    $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</td></tr>');
+    $('#itemsTable tbody').html('<tr id="noItemsRow"><td colspan="17" class="text-center text-muted">No items added</tr>');
   }else{
     itemCount = $('.item-row').length;
     updateTotals();
