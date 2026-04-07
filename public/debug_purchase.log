@@ -41172,3 +41172,474 @@
 }
 [2026-04-07 06:15:39] Database connection closed
 [2026-04-07 06:15:39] === PURCHASE SESSION ENDED ===
+[2026-04-07 06:51:39] === NEW PURCHASE SESSION STARTED ===
+[2026-04-07 06:51:39] Session data: {
+    "creation_errors": [
+        "Username already exists. Please choose a different username."
+    ],
+    "form_data": {
+        "company_name": "Diamond Wine Shop",
+        "fin_year": "7",
+        "comp_addr": "SANGLI",
+        "license_type": "1",
+        "comp_flno": "1111",
+        "imfl_limit": "1000.00",
+        "beer_limit": "4000.00",
+        "cl_limit": "2000.00",
+        "admin_username": "Diamond",
+        "admin_password": "123456",
+        "confirm_password": "123456"
+    },
+    "company_creation_success": "Company and admin user created successfully! Created 1 daily stock tables.<br><strong>Table Structure:<\/strong><br>• <span style='color: #38A169; font-weight: bold;'>CURRENT MONTH TABLE (Ongoing Operations):<\/span><br>  <strong>tbldailystock_1<\/strong> - April 2026 (30 days)<br>• <span style='color: #38A169; font-weight: bold;'>Note:<\/span> Current Financial Year selected - Archive tables will be created as months pass.<br><br><strong>Item Stock Structure:<\/strong><br>• Added columns to tblitem_stock:<br>  - <strong>OPENING_STOCK1<\/strong> (Opening Stock for Company 1)<br>  - <strong>CURRENT_STOCK1<\/strong> (Current Stock for Company 1)<br>  - <strong>MONTHLY_STOCK1<\/strong> (Monthly Stock for Company 1)<br>",
+    "company_created": "Diamond Wine Shop",
+    "admin_username": "Diamond",
+    "company_id": 1,
+    "fy_dates": {
+        "start": "01-04-2026",
+        "end": "31-03-2027"
+    },
+    "user_id": "1",
+    "username": "Diamond",
+    "CompID": 1,
+    "FIN_YEAR_ID": "7",
+    "FIN_YEAR_START": "2026-04-01 12:24:30",
+    "FIN_YEAR_END": "2027-03-31 23:59:59",
+    "FIN_YEAR_DISPLAY": "2026-2027",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "sale_quantities": []
+}
+[2026-04-07 06:51:39] POST data: []
+[2026-04-07 06:51:39] GET data: []
+[2026-04-07 06:51:39] Company ID from session: 1
+[2026-04-07 06:51:39] Database connection included
+[2026-04-07 06:51:39] License functions included
+[2026-04-07 06:51:39] License type: FL-II
+[2026-04-07 06:51:39] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-04-07 06:51:39] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-04-07 06:51:39] Purchase mode: F
+[2026-04-07 06:51:39] Next voucher number: 1
+[2026-04-07 06:51:39] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-04-07 06:51:39] Items query parameters: {
+    "query": "SELECT \n                        im.CODE, \n                        im.DETAILS, \n                        im.DETAILS2, \n                        im.PPRICE, \n                        im.ITEM_GROUP, \n                        im.LIQ_FLAG, \n                        im.CLASS_CODE_NEW AS CLASS,\n                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                        CONCAT('SCM', im.CODE) AS SCM_CODE,\n                        c.CATEGORY_NAME,\n                        cn.CLASS_NAME,\n                        sn.SUBCLASS_NAME,\n                        im.CATEGORY_CODE,\n                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW\n                   FROM tblitemmaster im\n                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE\n                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE\n                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE\n                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE\n                   WHERE im.CATEGORY_CODE IN (?,?,?,?,?,?,?,?)\n                   ORDER BY im.DETAILS",
+    "params": [
+        "CAT006",
+        "CAT005",
+        "CAT003",
+        "CAT008",
+        "CAT004",
+        "CAT007",
+        "CAT001",
+        "CAT002"
+    ],
+    "types": "ssssssss"
+}
+[2026-04-07 06:51:39] Items fetched from database: {
+    "count": 4690,
+    "category_filter_applied": true,
+    "allowed_categories": [
+        {
+            "CATEGORY_CODE": "CAT006",
+            "CATEGORY_NAME": "Cold Drinks",
+            "LIQ_FLAG": "O"
+        },
+        {
+            "CATEGORY_CODE": "CAT005",
+            "CATEGORY_NAME": "Country Liquor",
+            "LIQ_FLAG": "C"
+        },
+        {
+            "CATEGORY_CODE": "CAT003",
+            "CATEGORY_NAME": "Fermented Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT008",
+            "CATEGORY_NAME": "General",
+            "LIQ_FLAG": "O"
+        },
+        {
+            "CATEGORY_CODE": "CAT004",
+            "CATEGORY_NAME": "Mild Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT007",
+            "CATEGORY_NAME": "Soda",
+            "LIQ_FLAG": "O"
+        },
+        {
+            "CATEGORY_CODE": "CAT001",
+            "CATEGORY_NAME": "Spirit",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT002",
+            "CATEGORY_NAME": "Wine",
+            "LIQ_FLAG": "F"
+        }
+    ]
+}
+[2026-04-07 06:51:39] Suppliers fetched: {
+    "count": 36
+}
+[2026-04-07 06:51:39] Database connection closed
+[2026-04-07 06:51:39] === PURCHASE SESSION ENDED ===
+[2026-04-07 06:51:51] === NEW PURCHASE SESSION STARTED ===
+[2026-04-07 06:51:51] Session data: {
+    "creation_errors": [
+        "Username already exists. Please choose a different username."
+    ],
+    "company_creation_success": "Company and admin user created successfully! Created 1 daily stock tables.<br><strong>Table Structure:<\/strong><br>• <span style='color: #38A169; font-weight: bold;'>CURRENT MONTH TABLE (Ongoing Operations):<\/span><br>  <strong>tbldailystock_1<\/strong> - April 2026 (30 days)<br>• <span style='color: #38A169; font-weight: bold;'>Note:<\/span> Current Financial Year selected - Archive tables will be created as months pass.<br><br><strong>Item Stock Structure:<\/strong><br>• Added columns to tblitem_stock:<br>  - <strong>OPENING_STOCK1<\/strong> (Opening Stock for Company 1)<br>  - <strong>CURRENT_STOCK1<\/strong> (Current Stock for Company 1)<br>  - <strong>MONTHLY_STOCK1<\/strong> (Monthly Stock for Company 1)<br>",
+    "company_created": "Diamond Wine Shop",
+    "admin_username": "Diamond",
+    "company_id": 1,
+    "fy_dates": {
+        "start": "01-04-2026",
+        "end": "31-03-2027"
+    },
+    "user_id": "1",
+    "username": "Diamond",
+    "CompID": 1,
+    "FIN_YEAR_ID": "7",
+    "FIN_YEAR_START": "2026-04-01 12:24:30",
+    "FIN_YEAR_END": "2027-03-31 23:59:59",
+    "FIN_YEAR_DISPLAY": "2026-2027",
+    "COMP_NAME": "Diamond Wine Shop",
+    "stock_columns_checked": true,
+    "sale_quantities": []
+}
+[2026-04-07 06:51:51] POST data: {
+    "mode": "F",
+    "voc_no": "1",
+    "date": "2026-04-03",
+    "auto_tp_no": "FL1249-020426\/4",
+    "tp_no": "4",
+    "tp_date": "2026-04-02",
+    "inv_no": "",
+    "inv_date": "",
+    "supplier_name": "EMPIRE SPIRT INDIA",
+    "supplier_code": "EM2",
+    "items": [
+        {
+            "code": "SCMPL0010111",
+            "name": "Seagram's Imperial Blue Superior Grain Whisky",
+            "size": "375 ML",
+            "bottles_per_case": "24",
+            "batch_no": "3513",
+            "auto_batch": "BTP28-200326\/3513",
+            "mfg_month": "Mar-2026",
+            "bl": "27",
+            "vv": "25",
+            "tot_bott": "72",
+            "free_cases": "0",
+            "free_bottles": "0",
+            "cases": "3",
+            "bottles": "0",
+            "case_rate": "4163.000",
+            "mrp": "440"
+        }
+    ],
+    "cash_disc": "0.00",
+    "trade_disc": "0.00",
+    "octroi": "0.00",
+    "freight": "0.00",
+    "stax_per": "0.00",
+    "stax_amt": "0.00",
+    "tcs_per": "0.00",
+    "tcs_amt": "0.00",
+    "misc_charg": "0.00",
+    "basic_amt": "12489.00",
+    "tamt": "12489.00"
+}
+[2026-04-07 06:51:51] GET data: []
+[2026-04-07 06:51:51] Company ID from session: 1
+[2026-04-07 06:51:51] Database connection included
+[2026-04-07 06:51:51] License functions included
+[2026-04-07 06:51:51] License type: FL-II
+[2026-04-07 06:51:51] Available classes: [
+    {
+        "SGROUP": "W",
+        "DESC": "Whisky\/Spirit"
+    },
+    {
+        "SGROUP": "V",
+        "DESC": "Wine"
+    },
+    {
+        "SGROUP": "M",
+        "DESC": "Mild Beer"
+    },
+    {
+        "SGROUP": "F",
+        "DESC": "Strong Beer"
+    },
+    {
+        "SGROUP": "D",
+        "DESC": "Brandy\/Cognac"
+    },
+    {
+        "SGROUP": "K",
+        "DESC": "Vodka"
+    },
+    {
+        "SGROUP": "G",
+        "DESC": "Gin"
+    },
+    {
+        "SGROUP": "R",
+        "DESC": "Rum"
+    },
+    {
+        "SGROUP": "O",
+        "DESC": "Others"
+    }
+]
+[2026-04-07 06:51:51] Allowed class SGROUP values: [
+    "W",
+    "V",
+    "M",
+    "F",
+    "D",
+    "K",
+    "G",
+    "R",
+    "O"
+]
+[2026-04-07 06:51:51] Purchase mode: F
+[2026-04-07 06:51:51] Next voucher number: 1
+[2026-04-07 06:51:51] Distinct sizes from database: [
+    "50",
+    "60",
+    "90",
+    "170",
+    "180",
+    "200",
+    "250",
+    "275",
+    "330",
+    "355",
+    "375",
+    "500",
+    "650",
+    "700",
+    "750",
+    "1000",
+    "1500",
+    "1750",
+    "2000",
+    "3000",
+    "4500",
+    "15000",
+    "20000",
+    "30000",
+    "50000"
+]
+[2026-04-07 06:51:51] Items query parameters: {
+    "query": "SELECT \n                        im.CODE, \n                        im.DETAILS, \n                        im.DETAILS2, \n                        im.PPRICE, \n                        im.ITEM_GROUP, \n                        im.LIQ_FLAG, \n                        im.CLASS_CODE_NEW AS CLASS,\n                        COALESCE(s.BOTTLE_PER_CASE, 12) AS BOTTLE_PER_CASE,\n                        CONCAT('SCM', im.CODE) AS SCM_CODE,\n                        c.CATEGORY_NAME,\n                        cn.CLASS_NAME,\n                        sn.SUBCLASS_NAME,\n                        im.CATEGORY_CODE,\n                        im.CLASS_CODE_NEW AS CLASS_CODE_NEW\n                   FROM tblitemmaster im\n                   LEFT JOIN tblcategory c ON im.CATEGORY_CODE = c.CATEGORY_CODE\n                   LEFT JOIN tblclass_new cn ON im.CLASS_CODE_NEW = cn.CLASS_CODE\n                   LEFT JOIN tblsubclass_new sn ON im.SUBCLASS_CODE_NEW = sn.SUBCLASS_CODE\n                   LEFT JOIN tblsize s ON im.SIZE_CODE = s.SIZE_CODE\n                   WHERE im.CATEGORY_CODE IN (?,?,?,?,?,?,?,?)\n                   ORDER BY im.DETAILS",
+    "params": [
+        "CAT006",
+        "CAT005",
+        "CAT003",
+        "CAT008",
+        "CAT004",
+        "CAT007",
+        "CAT001",
+        "CAT002"
+    ],
+    "types": "ssssssss"
+}
+[2026-04-07 06:51:51] Items fetched from database: {
+    "count": 4690,
+    "category_filter_applied": true,
+    "allowed_categories": [
+        {
+            "CATEGORY_CODE": "CAT006",
+            "CATEGORY_NAME": "Cold Drinks",
+            "LIQ_FLAG": "O"
+        },
+        {
+            "CATEGORY_CODE": "CAT005",
+            "CATEGORY_NAME": "Country Liquor",
+            "LIQ_FLAG": "C"
+        },
+        {
+            "CATEGORY_CODE": "CAT003",
+            "CATEGORY_NAME": "Fermented Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT008",
+            "CATEGORY_NAME": "General",
+            "LIQ_FLAG": "O"
+        },
+        {
+            "CATEGORY_CODE": "CAT004",
+            "CATEGORY_NAME": "Mild Beer",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT007",
+            "CATEGORY_NAME": "Soda",
+            "LIQ_FLAG": "O"
+        },
+        {
+            "CATEGORY_CODE": "CAT001",
+            "CATEGORY_NAME": "Spirit",
+            "LIQ_FLAG": "F"
+        },
+        {
+            "CATEGORY_CODE": "CAT002",
+            "CATEGORY_NAME": "Wine",
+            "LIQ_FLAG": "F"
+        }
+    ]
+}
+[2026-04-07 06:51:51] Suppliers fetched: {
+    "count": 36
+}
+[2026-04-07 06:51:51] === FORM SUBMISSION STARTED ===
+[2026-04-07 06:51:51] cleanItemCode: 'SCMPL0010111' -> 'PL0010111'
+[2026-04-07 06:51:51] Bulk insert succeeded for 1 items
+[2026-04-07 06:51:51] Updated MRP for item PL0010111 to 440
+[2026-04-07 06:51:51] Processing stock updates - 1 unique items
+[2026-04-07 06:51:51] Updating stock for item: SCMPL0010111, bottles: 72
+[2026-04-07 06:51:51] updateStock called: {
+    "item_code": "SCMPL0010111",
+    "total_bottles": 72,
+    "purchase_date": "2026-04-03",
+    "company_id": 1,
+    "fin_year_id": "7"
+}
+[2026-04-07 06:51:51] Using CURRENT YEAR logic for stock update
+[2026-04-07 06:51:51] Updating current year stock: {
+    "item_code": "SCMPL0010111",
+    "total_bottles": 72,
+    "purchase_date": "2026-04-03",
+    "fin_year_id": "7"
+}
+[2026-04-07 06:51:51] Month is current, updating current table with cascading
+[2026-04-07 06:51:51] Updating current month stock: {
+    "table": "tbldailystock_1",
+    "monthYear": "2026-04",
+    "itemCode": "SCMPL0010111",
+    "dayOfMonth": "3",
+    "currentDay": "7",
+    "totalBottles": 72
+}
+[2026-04-07 06:51:51] Created new record for SCMPL0010111
+[2026-04-07 06:51:51] Cascading from day 3 to 7
+[2026-04-07 06:51:51] Cascaded day 4: opening = previous day closing
+[2026-04-07 06:51:51] Cascaded day 5: opening = previous day closing
+[2026-04-07 06:51:51] Cascaded day 6: opening = previous day closing
+[2026-04-07 06:51:51] Cascaded day 7: opening = previous day closing
+[2026-04-07 06:51:51] Current month stock update completed, cascaded to day 7
+[2026-04-07 06:51:51] === updateItemStock CALLED ===: {
+    "item_code": "SCMPL0010111",
+    "total_bottles": 72,
+    "company_id": 1,
+    "stock_column": "CURRENT_STOCK1",
+    "fin_year_id": "7"
+}
+[2026-04-07 06:51:51] Current stock before update: {
+    "item_code": "SCMPL0010111",
+    "current_stock": 0
+}
+[2026-04-07 06:51:51] Record existence check: {
+    "item_code": "SCMPL0010111",
+    "exists": false,
+    "fin_year": "7"
+}
+[2026-04-07 06:51:51] Executing INSERT query: {
+    "query": "INSERT INTO tblitem_stock (ITEM_CODE, FIN_YEAR, CURRENT_STOCK1) \n                       VALUES (?, ?, ?)",
+    "params": [
+        "SCMPL0010111",
+        "7",
+        72
+    ]
+}
+[2026-04-07 06:51:51] Item stock update result: {
+    "success": true,
+    "operation": "insert",
+    "affected_rows": 1,
+    "previous_stock": 0,
+    "added_bottles": 72,
+    "new_stock": 72,
+    "expected_stock": 72
+}
+[2026-04-07 06:51:51] VOC_NO renumbered for company 1, affected rows: 0
+[2026-04-07 06:51:51] === FORM SUBMISSION COMPLETED SUCCESSFULLY ===
+[2026-04-07 06:51:51] Total unique items updated: 1
