@@ -38,7 +38,7 @@
                     "dev-main": "3.x-dev"
                 }
             },
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "Composer\\Pcre\\": "src"
@@ -118,7 +118,7 @@
             },
             "time": "2025-01-27T12:07:53+00:00",
             "type": "library",
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "ZipStream\\": "src/"
@@ -189,7 +189,7 @@
             },
             "time": "2022-12-06T16:21:08+00:00",
             "type": "library",
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "Complex\\": "classes/src/"
@@ -247,7 +247,7 @@
             },
             "time": "2022-12-02T22:17:43+00:00",
             "type": "library",
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "Matrix\\": "classes/src/"
@@ -337,7 +337,7 @@
             },
             "time": "2026-03-01T00:58:56+00:00",
             "type": "library",
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "PhpOffice\\PhpSpreadsheet\\": "src/PhpSpreadsheet"
@@ -413,7 +413,7 @@
                     "dev-master": "3.0.x-dev"
                 }
             },
-            "installation-source": "source",
+            "installation-source": "dist",
             "autoload": {
                 "psr-4": {
                     "Psr\\SimpleCache\\": "src/"
