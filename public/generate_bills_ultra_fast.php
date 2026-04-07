@@ -52,106 +52,84 @@ function logDistribution($step, $item_code, $data) {
 // STEP 3.1: CUMULATIVE STOCK VALIDATION FUNCTION
 // ============================================================================
 // Validates that cumulative sales up to each date don't exceed closing stock
-// NOTE: Respects financial year boundaries:
-// - Current FY: Only validate up to TODAY
-// - Previous FY: Validate up to FY end date
-function validateCumulativeStock($conn, $item_code, $distribution, $date_array, $comp_id, $daily_stock_table, $fin_year_start = null, $fin_year_end = null) {
+// NOTE: Skips validation for historical dates (not current month) since stock data may not be accurate
+function validateCumulativeStock($conn, $item_code, $distribution, $date_array, $comp_id, $daily_stock_table) {
     $cumulative = 0;
     $current_month = date('Y-m');
-    $today = date('Y-m-d');
-    
-    // Set defaults if not provided
-    if ($fin_year_start === null) {
-        $fin_year_start = $_SESSION['FIN_YEAR_START'] ?? $today;
-    }
-    if ($fin_year_end === null) {
-        $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? $today;
-    }
-    
-    // Determine if we're in current FY
-    $is_current_fy = ($fin_year_start <= $today && $today <= $fin_year_end);
-    
+
     foreach ($date_array as $index => $date) {
         $qty = $distribution[$index] ?? 0;
         $cumulative += $qty;
-        
+
         // Only validate if there's a quantity to sell on this date
         if ($qty > 0) {
             // Get the date's month
             $month_year = date('Y-m', strtotime($date));
-            
-            // RULE 1: For current FY, skip validation for dates beyond today
-            if ($is_current_fy && $date > $today) {
-                logMessage("SKIP: Date $date is in future (beyond today $today) for current FY", 'DEBUG');
-                continue;
-            }
-            
-            // RULE 2: Skip validation for dates beyond financial year end
-            if ($date > $fin_year_end) {
-                logMessage("SKIP: Date $date is beyond FY end $fin_year_end", 'DEBUG');
-                continue;
-            }
-            
+
             // SKIP validation for historical dates (not current month)
             // Historical stock data may not be accurate, so we trust the UI distribution
             if ($month_year !== $current_month) {
                 logMessage("DEBUG: Skipping stock validation for historical date $date (month: $month_year)", 'DEBUG');
                 continue;
             }
-            
+
             // Get closing stock for this date
             $day_num = sprintf('%02d', date('d', strtotime($date)));
             $closing_column = "DAY_{$day_num}_CLOSING";
-            
-            // Check if we need to use a different table for this month
-            $table_to_use = $daily_stock_table;
-            if ($month_year !== $current_month) {
-                $date_month_short = date('m', strtotime($date));
-                $date_year_short = date('y', strtotime($date));
-                $table_to_use = "tbldailystock_" . $comp_id . "_" . $date_month_short . "_" . $date_year_short;
+
+            // Validate column name
+            if (empty($closing_column) || !preg_match('/^DAY_\d{2}_CLOSING$/', $closing_column)) {
+                logMessage("ERROR: Invalid closing column '$closing_column' for date $date", 'ERROR');
+                return [
+                    'valid' => false,
+                    'date' => $date,
+                    'cumulative' => $cumulative,
+                    'max' => 0,
+                    'error' => 'Invalid column name'
+                ];
             }
-            
+
+            // Get table name strictly based on date
+            $table_to_use = getDailyStockTableByDate($comp_id, $date);
+
+            // Log table check
+            logMessage("TABLE_CHECK: date=$date, table=$table_to_use, column=$closing_column, item=$item_code", 'DEBUG');
+
             // Check if table exists
             $check_table = "SHOW TABLES LIKE '$table_to_use'";
-            $table_result = $conn->query($check_table);
-            $table_exists = $table_result ? $table_result->num_rows > 0 : false;
-            
+            $table_exists = $conn->query($check_table)->num_rows > 0;
+
             if (!$table_exists) {
-                logMessage("Table $table_to_use does not exist - assuming 0 stock", 'WARNING');
+                // Table doesn't exist, assume 0 stock
                 $closing_stock = 0;
             } else {
-                // Check if column exists
-                $check_column = "SHOW COLUMNS FROM $table_to_use LIKE '$closing_column'";
-                $column_result = $conn->query($check_column);
-                $column_exists = $column_result ? $column_result->num_rows > 0 : false;
-                
-                if (!$column_exists) {
-                    logMessage("Column $closing_column does not exist - assuming 0 stock", 'WARNING');
-                    $closing_stock = 0;
-                } else {
-                    $query = "SELECT $closing_column FROM $table_to_use WHERE STK_MONTH = ? AND ITEM_CODE = ?";
-                    $stmt = $conn->prepare($query);
-                    if (!$stmt) {
-                        logMessage("Failed to prepare statement: " . $conn->error, 'ERROR');
-                        continue;
-                    }
-                    $stmt->bind_param("ss", $month_year, $item_code);
-                    $stmt->execute();
-                    $result = $stmt->get_result();
-                    
-                    if ($result->num_rows > 0) {
-                        $row = $result->fetch_assoc();
-                        $closing_stock = (float)($row[$closing_column] ?? 0);
-                    } else {
-                        $closing_stock = 0;
-                    }
-                    $stmt->close();
+                $query = "SELECT `$closing_column` FROM `$table_to_use` WHERE STK_MONTH = ? AND ITEM_CODE = ?";
+                $stmt = $conn->prepare($query);
+                if (!$stmt) {
+                    logMessage("ERROR: Failed to prepare query: $query", 'ERROR');
+                    return [
+                        'valid' => false,
+                        'date' => $date,
+                        'cumulative' => $cumulative,
+                        'max' => 0,
+                        'error' => 'Query preparation failed'
+                    ];
                 }
+                $stmt->bind_param("ss", $month_year, $item_code);
+                $stmt->execute();
+                $result = $stmt->get_result();
+
+                if ($result->num_rows > 0) {
+                    $row = $result->fetch_assoc();
+                    $closing_stock = $row[$closing_column] ?? 0;
+                } else {
+                    $closing_stock = 0;
+                }
+                $stmt->close();
             }
-            
+
             // Check if cumulative sales exceed closing stock
             if ($cumulative > $closing_stock) {
-                logMessage("FAILED: Item $item_code on $date - Cumulative: $cumulative > Max: $closing_stock", 'WARNING');
                 return [
                     'valid' => false,
                     'date' => $date,
@@ -161,7 +139,7 @@ function validateCumulativeStock($conn, $item_code, $distribution, $date_array, 
             }
         }
     }
-    
+
     return ['valid' => true];
 }
 
@@ -235,8 +213,6 @@ try {
     $comp_id = (int)$_SESSION['CompID'];
     $user_id = (int)$_SESSION['user_id'];
     $fin_year_id = $_SESSION['FIN_YEAR_ID'] ?? '';
-    $fin_year_start = $_SESSION['FIN_YEAR_START'] ?? date('Y-m-d');
-    $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? date('Y-m-d');
     $items = $_POST['items'] ?? [];
     $distributions = $_POST['distribution'] ?? []; // NEW: Get saved distributions
     
@@ -264,7 +240,10 @@ try {
     $_SESSION[$progress_key]['total_items'] = count($items);
     $_SESSION[$progress_key]['status'] = 'processing';
     $_SESSION[$progress_key]['message'] = 'Processing ' . count($items) . ' items...';
-    
+
+    // Define daily stock table for current month
+    $daily_stock_table = "tbldailystock_" . $comp_id;
+
     // ============================================================================
     // STEP 4: CREATE DATE ARRAY (ULTRA-FAST)
     // ============================================================================
@@ -429,7 +408,7 @@ try {
         $daily_sales_data[$item_code] = $full_distribution;
         
         // STEP 3.1: CUMULATIVE VALIDATION
-        $cumul_val = validateCumulativeStock($conn, $item_code, $full_distribution, $date_array, $comp_id, $daily_stock_table, $fin_year_start, $fin_year_end);
+        $cumul_val = validateCumulativeStock($conn, $item_code, $full_distribution, $date_array, $comp_id, $daily_stock_table);
         if (!$cumul_val['valid']) {
             throw new Exception("Stock validation failed for $item_code on {$cumul_val['date']}");
         }
@@ -615,18 +594,9 @@ try {
             $sale_date = $bill['bill_date'];
             $day_num = sprintf('%02d', date('d', strtotime($sale_date)));
             $month_year = date('Y-m', strtotime($sale_date));
-            
-            // Determine table name
-            $current_date = new DateTime();
-            $current_month = $current_date->format('Y-m');
-            
-            if ($month_year === $current_month) {
-                $table_name = "tbldailystock_" . $comp_id;
-            } else {
-                $month_short = date('m', strtotime($sale_date));
-                $year_short = date('y', strtotime($sale_date));
-                $table_name = "tbldailystock_" . $comp_id . "_" . $month_short . "_" . $year_short;
-            }
+
+            // Get table name strictly based on sale date
+            $table_name = getDailyStockTableByDate($comp_id, $sale_date);
             
             foreach ($bill['items'] as $item) {
                 $key = $table_name . '|' . $item['code'] . '|' . $month_year;
@@ -822,18 +792,9 @@ try {
             $month_year = date('Y-m', strtotime($sale_date));
             $item_code = $row['ITEM_CODE'];
             $qty = $row['total_qty'];
-            
-            // Determine table name
-            $current_date = new DateTime();
-            $current_month = $current_date->format('Y-m');
-            
-            if ($month_year === $current_month) {
-                $table_name = "tbldailystock_" . $comp_id;
-            } else {
-                $month_short = date('m', strtotime($sale_date));
-                $year_short = date('y', strtotime($sale_date));
-                $table_name = "tbldailystock_" . $comp_id . "_" . $month_short . "_" . $year_short;
-            }
+
+            // Get table name strictly based on sale date
+            $table_name = getDailyStockTableByDate($comp_id, $sale_date);
             
             $key = $table_name . '|' . $item_code . '|' . $month_year;
             
@@ -876,31 +837,40 @@ try {
             // Escape strings for safety
             $item_code_esc = $conn->real_escape_string($item_code);
             $month_esc = $conn->real_escape_string($month);
-            
+
             // Check if record exists
-            $check = $conn->query("SELECT 1 FROM $table WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc' LIMIT 1");
-            
+            $check = $conn->query("SELECT 1 FROM `$table` WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc' LIMIT 1");
+
             if (!$check || $check->num_rows == 0) {
-                // Get previous month's closing
-                $prev_month = date('Y-m', strtotime($month . '-01 -1 month'));
-                $prev_table = getDailyStockTableName($comp_id, $prev_month);
-                $prev_closing = 0;
-                
-                if ($prev_table) {
-                    $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
-                    $prev_col = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
-                    
-                    $prev_result = $conn->query("SELECT $prev_col FROM $prev_table WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$prev_month'");
-                    if ($prev_result && $row = $prev_result->fetch_assoc()) {
-                        $prev_closing = (float)($row[$prev_col] ?? 0);
+                // Check if this is current month - skip previous month lookup
+                $is_current_month = (date('Y-m') === $month_esc);
+
+                $prev_closing = 0; // Default to 0 for current month
+
+                if (!$is_current_month) {
+                    // Get previous month's closing only for non-current months
+                    $prev_month = date('Y-m', strtotime($month . '-01 -1 month'));
+                    $prev_table = getDailyStockTableByDate($comp_id, $prev_month . '-01');
+
+                    if ($prev_table) {
+                        $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
+                        $prev_col = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
+
+                        // Log table check
+                        logMessage("TABLE_CHECK: date=$prev_month-01, table=$prev_table, column=$prev_col, item=$item_code_esc", 'DEBUG');
+
+                        $prev_result = $conn->query("SELECT `$prev_col` FROM `$prev_table` WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$prev_month'");
+                        if ($prev_result && $row = $prev_result->fetch_assoc()) {
+                            $prev_closing = (float)($row[$prev_col] ?? 0);
+                        }
                     }
                 }
-                
+
                 // Insert new record
                 $insert_cols = ["ITEM_CODE", "STK_MONTH", "DAY_01_OPEN", "DAY_01_CLOSING"];
                 $insert_vals = ["'$item_code_esc'", "'$month_esc'", $prev_closing, $prev_closing];
-                
-                $conn->query("INSERT INTO $table (" . implode(',', $insert_cols) . ") VALUES (" . implode(',', $insert_vals) . ")");
+
+                $conn->query("INSERT INTO `$table` (" . implode(',', $insert_cols) . ") VALUES (" . implode(',', $insert_vals) . ")");
             }
             
             // Update sales for each day
@@ -909,17 +879,20 @@ try {
                 $col = "DAY_{$day_padded}_SALES";
                 $closing_col = "DAY_{$day_padded}_CLOSING";
                 
+                // Log table check
+                logMessage("TABLE_CHECK: date=$month-$day_padded, table=$table, column=$col, item=$item_code_esc", 'DEBUG');
+
                 // Get current values
-                $current = $conn->query("SELECT DAY_{$day_padded}_OPEN, DAY_{$day_padded}_PURCHASE, $col FROM $table WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc'");
+                $current = $conn->query("SELECT `DAY_{$day_padded}_OPEN`, `DAY_{$day_padded}_PURCHASE`, `$col` FROM `$table` WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc'");
                 if ($current && $row = $current->fetch_assoc()) {
                     $opening = (float)($row["DAY_{$day_padded}_OPEN"] ?? 0);
                     $purchase = (float)($row["DAY_{$day_padded}_PURCHASE"] ?? 0);
                     $current_sales = (float)($row[$col] ?? 0);
-                    
+
                     $new_sales = $current_sales + $qty;
                     $closing = $opening + $purchase - $new_sales;
-                    
-                    $conn->query("UPDATE $table SET $col = $new_sales, $closing_col = $closing WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc'");
+
+                    $conn->query("UPDATE `$table` SET `$col` = $new_sales, `$closing_col` = $closing WHERE ITEM_CODE = '$item_code_esc' AND STK_MONTH = '$month_esc'");
                 }
             }
             
@@ -927,10 +900,16 @@ try {
             $min_day = min(array_keys($sales));
             recalculateDailyStockFast($conn, $table, $item_code_esc, $month_esc, $min_day);
             
-            // Cascade to financial year end
+            // Cascade to financial year end or today for current FY
             $fin_year_end = $_SESSION['FIN_YEAR_END'] ?? '';
-            if (!empty($fin_year_end)) {
-                cascadeToFinancialYearEndFast($conn, $item_code_esc, $month_esc, $comp_id, $fin_year_end);
+            $fin_year_id = $_SESSION['FIN_YEAR_ID'] ?? '';
+            if (!empty($fin_year_end) && !empty($fin_year_id)) {
+                // Determine financial year start
+                $fy_start_year = substr($fin_year_id, 0, 4);
+                $fy_start = $fy_start_year . '-04-01'; // April 1
+
+                $today = date('Y-m-d');
+                cascadeToFinancialYearEndFast($conn, $item_code_esc, $month_esc, $comp_id, $fin_year_end, $fy_start, $today);
             }
         }
     }
@@ -1004,6 +983,26 @@ echo json_encode($response);
 exit;
 
 // ============================================================================
+// TEST FUNCTION FOR TABLE SELECTION (REMOVE AFTER TESTING)
+// ============================================================================
+function testTableSelection() {
+    $comp_id = 1;
+    $test_dates = [
+        '2026-04-07', // Current month
+        '2026-03-15', // Previous month same year
+        '2025-12-10', // Previous year
+        '2021-03-31'  // Much older
+    ];
+
+    foreach ($test_dates as $date) {
+        $table = getDailyStockTableByDate($comp_id, $date);
+        echo "Date: $date -> Table: $table\n";
+    }
+}
+
+// Uncomment to test: testTableSelection(); exit;
+
+// ============================================================================
 // HELPER FUNCTIONS (unchanged from original)
 // ============================================================================
 
@@ -1031,7 +1030,7 @@ function getNextBillNumberBatch($conn, $comp_id) {
  */
 function getDailyStockTableName($comp_id, $month) {
     if (empty($month)) return null;
-    
+
     $current_month = date('Y-m');
     if ($month === $current_month) {
         return "tbldailystock_" . $comp_id;
@@ -1040,6 +1039,22 @@ function getDailyStockTableName($comp_id, $month) {
         $year_short = date('y', strtotime($month));
         return "tbldailystock_" . $comp_id . "_" . $month_short . "_" . $year_short;
     }
+}
+
+/**
+ * Get daily stock table name strictly based on date
+ */
+function getDailyStockTableByDate($comp_id, $date) {
+    $selected_month = date('Y-m', strtotime($date));
+    $current_month  = date('Y-m');
+
+    if ($selected_month === $current_month) {
+        return "tbldailystock_" . $comp_id;
+    }
+
+    return "tbldailystock_" . $comp_id . "_"
+        . date('m', strtotime($date)) . "_"
+        . date('y', strtotime($date));
 }
 
 /**
@@ -1188,104 +1203,142 @@ function createDailyStockTableFast($conn, $table_name) {
  */
 function recalculateDailyStockFast($conn, $table, $item_code, $month, $start_day) {
     $last_day = date('t', strtotime($month . '-01'));
-    
+
     for ($day = $start_day; $day <= $last_day; $day++) {
         $day_num = sprintf('%02d', $day);
         $opening_col = "DAY_{$day_num}_OPEN";
         $purchase_col = "DAY_{$day_num}_PURCHASE";
         $sales_col = "DAY_{$day_num}_SALES";
         $closing_col = "DAY_{$day_num}_CLOSING";
-        
+
+        // Log table check
+        logMessage("TABLE_CHECK: date=$month-$day_num, table=$table, item=$item_code", 'DEBUG');
+
         // Get current values
-        $result = $conn->query("SELECT $opening_col, $purchase_col, $sales_col 
-                                FROM $table 
+        $result = $conn->query("SELECT `$opening_col`, `$purchase_col`, `$sales_col`
+                                FROM `$table`
                                 WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
-        
+
         if ($result && $row = $result->fetch_assoc()) {
             $opening = (float)($row[$opening_col] ?? 0);
             $purchase = (float)($row[$purchase_col] ?? 0);
             $sales = (float)($row[$sales_col] ?? 0);
-            
+
             $closing = $opening + $purchase - $sales;
-            
-            $conn->query("UPDATE $table SET $closing_col = $closing WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
-            
+
+            $conn->query("UPDATE `$table` SET `$closing_col` = $closing WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
+
             // Update next day's opening
             if ($day < $last_day) {
                 $next_day = sprintf('%02d', $day + 1);
-                $conn->query("UPDATE $table SET DAY_{$next_day}_OPEN = $closing WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
+                $conn->query("UPDATE `$table` SET `DAY_{$next_day}_OPEN` = $closing WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$month'");
             }
         }
     }
 }
 
 /**
- * Cascade daily stock updates to all months until financial year end
+ * Cascade daily stock updates to all months until financial year end or today for current FY
  */
-function cascadeToFinancialYearEndFast($conn, $item_code, $start_month, $comp_id, $fin_year_end) {
-    if (empty($fin_year_end)) {
-        logMessage("WARNING: No financial year end set, skipping cascade", 'INFO');
+function cascadeToFinancialYearEndFast($conn, $item_code, $start_month, $comp_id, $fin_year_end, $fy_start, $today) {
+    if (empty($fin_year_end) || empty($fy_start)) {
+        logMessage("WARNING: Financial year parameters not set, skipping cascade", 'INFO');
         return;
     }
-    
+
     $fin_year_end_obj = new DateTime($fin_year_end);
+    $fy_start_obj = new DateTime($fy_start);
+    $today_obj = new DateTime($today);
+    $start_month_obj = new DateTime($start_month . '-01');
+
+    // Determine if start_month is in current financial year
+    $is_current_fy = ($start_month_obj >= $fy_start_obj && $start_month_obj <= $fin_year_end_obj);
+
+    $cascade_end_obj = $is_current_fy ? $today_obj : $fin_year_end_obj;
+    $cascade_type = $is_current_fy ? 'today' : 'financial year end';
+
+    logMessage("Starting cascade to $cascade_type for item $item_code from month $start_month (FY: $fy_start to $fin_year_end, today: $today)", 'INFO');
+
     $current_month_obj = new DateTime($start_month . '-01');
-    
-    logMessage("Starting cascade to financial year end $fin_year_end for item $item_code from month $start_month", 'INFO');
-    
+
     while (true) {
         $current_month_obj->modify('+1 month');
         $next_month = $current_month_obj->format('Y-m');
         $next_month_first_day = $current_month_obj->format('Y-m-01');
-        
+
         // Get the last day of next month
         $next_month_last_day_obj = clone $current_month_obj;
         $next_month_last_day_obj->modify('last day of this month');
-        
-        // Check if we've reached or passed the financial year end
-        if ($next_month_last_day_obj > $fin_year_end_obj) {
-            logMessage("Reached month $next_month which extends beyond financial year end $fin_year_end, stopping cascade", 'INFO');
+
+        // For current FY, check if we've reached today's month
+        // For previous FY, check if we've reached or passed the financial year end
+        $should_stop = false;
+        if ($is_current_fy) {
+            // Stop if next month starts after today
+            if ($current_month_obj > $today_obj) {
+                logMessage("Reached month $next_month which is after today $today, stopping cascade for current FY", 'INFO');
+                $should_stop = true;
+            }
+        } else {
+            // Stop if next month extends beyond financial year end
+            if ($next_month_last_day_obj > $fin_year_end_obj) {
+                logMessage("Reached month $next_month which extends beyond financial year end $fin_year_end, stopping cascade", 'INFO');
+                $should_stop = true;
+            }
+        }
+
+        if ($should_stop) {
             break;
         }
-        
+
         // Get the table for this month
-        $next_month_table = getDailyStockTableName($comp_id, $next_month);
-        
+        $next_month_date = $next_month . '-01'; // Use first day of month as date
+        $next_month_table = getDailyStockTableByDate($comp_id, $next_month_date);
+
+        // Log table check
+        logMessage("TABLE_CHECK: date=$next_month-01, table=$next_month_table, item=$item_code", 'DEBUG');
+
         // Check if table exists
         $check_table = $conn->query("SHOW TABLES LIKE '$next_month_table'");
         if ($check_table->num_rows == 0) {
             createDailyStockTableFast($conn, $next_month_table);
             logMessage("Created table $next_month_table for cascading", 'INFO');
         }
-        
+
         // Get previous month's closing
         $prev_month = date('Y-m', strtotime($next_month . '-01 -1 month'));
-        $prev_table = getDailyStockTableName($comp_id, $prev_month);
+        $prev_month_date = $prev_month . '-01'; // Use first day of month as date
+        $prev_table = getDailyStockTableByDate($comp_id, $prev_month_date);
         $prev_last_day = date('d', strtotime('last day of ' . $prev_month));
         $prev_closing_column = "DAY_" . sprintf('%02d', $prev_last_day) . "_CLOSING";
-        
+
+        // Log table check for previous month
+        logMessage("TABLE_CHECK: date=$prev_month-01, table=$prev_table, column=$prev_closing_column, item=$item_code", 'DEBUG');
+
         $prev_closing = 0;
-        $prev_result = $conn->query("SELECT $prev_closing_column FROM $prev_table WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$prev_month'");
-        if ($prev_result && $row = $prev_result->fetch_assoc()) {
-            $prev_closing = (float)($row[$prev_closing_column] ?? 0);
+        if ($prev_table) {
+            $prev_result = $conn->query("SELECT `$prev_closing_column` FROM `$prev_table` WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$prev_month'");
+            if ($prev_result && $row = $prev_result->fetch_assoc()) {
+                $prev_closing = (float)($row[$prev_closing_column] ?? 0);
+            }
         }
-        
+
         // Check if record exists
-        $check_record = $conn->query("SELECT 1 FROM $next_month_table WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$next_month' LIMIT 1");
-        
+        $check_record = $conn->query("SELECT 1 FROM `$next_month_table` WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$next_month' LIMIT 1");
+
         if (!$check_record || $check_record->num_rows == 0) {
             // Create new record
-            $conn->query("INSERT INTO $next_month_table (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_CLOSING) VALUES ('$item_code', '$next_month', $prev_closing, $prev_closing)");
+            $conn->query("INSERT INTO `$next_month_table` (ITEM_CODE, STK_MONTH, DAY_01_OPEN, DAY_01_CLOSING) VALUES ('$item_code', '$next_month', $prev_closing, $prev_closing)");
             logMessage("Inserted record for $item_code in $next_month with opening $prev_closing", 'INFO');
         } else {
             // Update existing record
-            $conn->query("UPDATE $next_month_table SET DAY_01_OPEN = $prev_closing, LAST_UPDATED = CURRENT_TIMESTAMP WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$next_month'");
+            $conn->query("UPDATE `$next_month_table` SET DAY_01_OPEN = $prev_closing, LAST_UPDATED = CURRENT_TIMESTAMP WHERE ITEM_CODE = '$item_code' AND STK_MONTH = '$next_month'");
             logMessage("Updated opening for $item_code in $next_month to $prev_closing", 'INFO');
         }
-        
+
         // Recalculate the entire month
         recalculateDailyStockFast($conn, $next_month_table, $item_code, $next_month, 1);
-        
+
         logMessage("Completed cascading for month $next_month", 'INFO');
     }
 }

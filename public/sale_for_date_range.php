@@ -316,37 +316,6 @@ if (!isset($_GET['start_date']) || !isset($_GET['end_date'])) {
     if ($end_date > $fin_year_end) $end_date = $fin_year_end;
 }
 
-// ============================================================================
-// DATE BOUNDARY VALIDATION - Respect financial year and current date
-// ============================================================================
-
-$today = date('Y-m-d');
-$original_end_date = $end_date;
-
-// Check if we're in current financial year
-$is_current_fy = ($fin_year_start <= $today && $today <= $fin_year_end);
-
-if ($is_current_fy && $end_date > $today) {
-    // Limit end_date to today for current FY
-    $end_date = $today;
-    logMessage("Date range adjusted: end_date limited from $original_end_date to $end_date (cannot go beyond today in current FY)", 'INFO');
-    
-    // Show warning to user
-    $date_warning = "<div class='alert alert-warning mb-3'>
-        <i class='fas fa-calendar-day'></i> 
-        <strong>Note:</strong> You are in the current financial year. Sales can only be entered up to today's date ({$today}).
-        Original end date ({$original_end_date}) has been adjusted to {$today}.
-    </div>";
-}
-
-// Also validate start_date is not beyond end_date
-if ($start_date > $end_date) {
-    $temp = $start_date;
-    $start_date = $end_date;
-    $end_date = $temp;
-    logMessage("Date range swapped: start_date and end_date were reversed", 'INFO');
-}
-
 // Get company ID
 $comp_id = $_SESSION['CompID'];
 $current_stock_column = "Current_Stock" . $comp_id;
@@ -2492,10 +2461,6 @@ logArray($debug_info, "Sales Page Load Debug Info");
           <strong><i class="fas fa-calendar"></i> Financial Year: <?= htmlspecialchars($fin_year_start . ' to ' . $fin_year_end) ?></strong>
           <span class="ms-2 text-muted">(Working with year: <?= htmlspecialchars($_SESSION['FIN_YEAR_ID'] ?? 'Not Set') ?>)</span>
       </div>
-
-      <?php if (isset($date_warning)): ?>
-          <?= $date_warning ?>
-      <?php endif; ?>
 
       <h3 class="mb-4">Sales by Date Range</h3>
 
